@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laporan Keuangan Sambel Tempong Mbok'e</title>
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#831843" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <meta name="apple-mobile-web-app-title" content="Keuangan Mbok'e" />
+    <link rel="stylesheet" href="css/style.css" />
+    <script src="js/main.js?v=8" defer></script>
+    <script src="js/transaksi.js?v=8" defer></script>
+  </head>
+  <body>
+    <!-- ==============================================
+         WADAH NOTIFIKASI
+         ============================================== -->
+    <div id="wadah-notifikasi"></div>
+
+    <!-- ==============================================
+         HALAMAN LOGIN
+         ============================================== -->
+    <div id="halaman-login">
+      <div class="kotak-login">
+        <!-- WADAH LOGO RESTORAN -->
+        <div class="wadah-logo">
+          <img
+            src="assets/images/logo-mboke.png.png"
+            alt="Logo Sambel Tempong Mbok'e"
+            class="logo-login"
+            id="logo-restoran"
+          />
+        </div>
+
+        <h2>Laporan Keuangan</h2>
+        <h3>Sambel Tempong Mbok'e</h3>
+
+        <div
+          style="
+            width: 100%;
+            background: #fff8e6;
+            padding: 8px 12px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid #ffd699;
+          "
+        >
+          <marquee
+            behavior="scroll"
+            direction="left"
+            scrollamount="4"
+            style="
+              color: #92400e;
+              font-weight: 700;
+              font-size: 13.5px;
+              display: block;
+              width: 100%;
+            "
+          >
+            🔥 Semangat Bu Dewi. Semoga Sambel Tempong Mbok'e Selalu di banjiri
+            rejeki yang terus mengalir, aminn🙌.
+          </marquee>
+        </div>
+
+        <div class="bagian-role">
+          <label>Masuk Sebagai:</label>
+          <div class="grup-tombol-role">
+            <button type="button" data-role="manajer" class="tombol-role">
+              <!-- Menggunakan ikon berwarna -->
+              <span class="ikon-warna">👨‍💼</span> Manajer
+            </button>
+            <button type="button" data-role="owner" class="tombol-role">
+              <!-- Menggunakan ikon berwarna -->
+              <span class="ikon-warna">👑</span> Owner
+            </button>
+          </div>
+        </div>
+
+        <div class="bagian-password">
+          <label>Password:</label>
+          <input
+            type="password"
+            id="password"
+            placeholder="Masukkan password"
+          />
+        </div>
+
+        <button type="button" id="tombol-masuk" class="tombol-masuk">
+          MASUK
+        </button>
+      </div>
+    </div>
+    <!-- AKHIR HALAMAN LOGIN -->
+
+    <!-- ==============================================
+         HALAMAN UTAMA (SEBELUMNYA SEMBUNYI)
+         ============================================== -->
+    <div id="halaman-utama" style="display: none">
+      <!-- HEADER -->
+      <header id="header-utama">
+        <div class="bungkus-header">
+          <!-- BAGIAN KIRI: LOGO & JUDUL -->
+          <div class="kiri-header">
+            <img
+              src="assets/images/logo-mboke.png.png"
+              alt="Logo"
+              class="logo-header"
+            />
+            <div class="nama-restoran-header">
+              <span class="biru-tua">Laporan Keuangan</span>
+              <span class="hijau-tua">Sambel Tempong Mbok'e</span>
+            </div>
+          </div>
+
+          <div class="tengah-header">
+            <span id="label-role" class="chip-role">—</span>
+          </div>
+          <div class="kanan-header">
+            <button type="button" id="tombol-keluar" class="tombol-keluar">
+              🚪 Keluar
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <!-- MENU NAVIGASI -->
+      <nav class="bungkus-menu">
+        <div id="menu-utama">
+          <button class="tombol-menu" data-menu="dashboard">
+            🏠 Dashboard
+          </button>
+          <button class="tombol-menu khusus-manajer" data-menu="transaksi">
+            ➕ Input Transaksi
+          </button>
+          <button class="tombol-menu khusus-manajer" data-menu="tabungan">
+            🏦 Pengelolaan Tabungan
+          </button>
+          <button class="tombol-menu" data-menu="laporan">
+            📊 Laporan Bulanan
+          </button>
+        </div>
+      </nav>
+
+      <!-- AREA KONTEN -->
+      <main id="konten-utama">
+        <div class="bungkus-konten">
+          <section class="kartu-selamat">
+            <h2 id="sapaan-user">Selamat datang</h2>
+            <p id="pesan-user">Anda berhasil masuk ke sistem.</p>
+          </section>
+
+          <!-- RINGKASAN KEUANGAN -->
+          <div id="ringkasan-keuangan" class="grid-ringkasan-lengkap">
+            <div class="kartu-ringkasan kartu-omset">
+              <div class="label-ringkasan">💰 Total Omset Keseluruhan</div>
+              <div class="nilai-ringkasan" id="nilai-omset">Rp 0</div>
+            </div>
+            <div class="kartu-ringkasan kartu-labakotor">
+              <div class="label-ringkasan">📈 Total Laba Kotor</div>
+              <div class="nilai-ringkasan" id="nilai-labakotor">Rp 0</div>
+            </div>
+            <div class="kartu-ringkasan kartu-lababersih">
+              <div class="label-ringkasan">💵 Total Laba Bersih</div>
+              <div class="nilai-ringkasan" id="nilai-lababersih">Rp 0</div>
+            </div>
+          </div>
+
+          <!-- TABEL LAPORAN HARIAN -->
+          <div
+            id="wadah-tabel-transaksi"
+            class="bungkus-tabel"
+            style="margin-top: 24px"
+          >
+            <h3>📊 Laporan Keuangan Harian Lengkap</h3>
+            <div class="tabel-responsif">
+              <table class="tabel-transaksi-lengkap">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Tunai</th>
+                    <th>QRIS Masuk</th>
+                    <th>Transfer</th>
+                    <th>Tabungan Wajib</th>
+                    <th>Kasbon</th>
+                    <th>Nama Penerima Kasbon</th>
+                    <th>Belanja Pasar</th>
+                    <th>Opsi Riil</th>
+                    <th>QRIS Keluar</th>
+                    <th>Omset</th>
+                    <th>Laba Kotor</th>
+                    <th>Laba Bersih</th>
+                    <th>Keterangan</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="isi-tabel-laporan">
+                  <tr>
+                    <td colspan="15" class="tabel-kosong">Memuat data...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="catatan-tabel">
+              Terakhir diperbarui: <span id="waktu-perbarui">—</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+    <!-- AKHIR HALAMAN UTAMA -->
+
+    <!-- ==============================================
+         KOTAK INPUT KUSTOM (GANTI PROMPT JADUL)
+         ============================================== -->
+    <div id="wadah-input-kustom" class="wadah-input-kustom">
+      <div class="kotak-input-kustom">
+        <h4 id="judul-input"></h4>
+        <p id="petunjuk-input"></p>
+        <input
+          type="text"
+          id="nilai-input"
+          placeholder="Contoh: 750000"
+          inputmode="numeric"
+        />
+        <div class="tombol-input">
+          <button type="button" id="btn-batal-input" class="btn-batal">
+            Batal
+          </button>
+          <button type="button" id="btn-ok-input" class="btn-ya">OK</button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
