@@ -182,12 +182,13 @@ document.addEventListener("DOMContentLoaded", function () {
   // TOMBOL PILIH ROLE
   // ==============================================
   document.addEventListener("click", (e) => {
-    if (e.target.classList.contains("tombol-role")) {
+    const tombolRole = e.target.closest(".tombol-role");
+    if (tombolRole) {
       document
         .querySelectorAll(".tombol-role")
         .forEach((t) => t.classList.remove("aktif"));
-      e.target.classList.add("aktif");
-      roleYangDipilih = e.target.dataset.role;
+      tombolRole.classList.add("aktif");
+      roleYangDipilih = tombolRole.dataset.role;
     }
   });
 
@@ -214,6 +215,7 @@ document.addEventListener("DOMContentLoaded", function () {
           "berhasil",
           "Berhasil masuk sebagai " + roleYangDipilih.toUpperCase(),
         );
+        localStorage.setItem("roleAktif", roleYangDipilih);
         setTimeout(() => {
           document.getElementById("halaman-login").style.display = "none";
           document.getElementById("halaman-utama").style.display = "block";
@@ -221,7 +223,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
           const labelRole = document.getElementById("label-role");
           if (labelRole) {
-            // Mengganti teks di header menjadi Icon dan Nama
             if (roleYangDipilih === "manajer") {
               labelRole.innerHTML = "👨‍💼 Esa (Manajer)";
             } else {
@@ -240,10 +241,15 @@ document.addEventListener("DOMContentLoaded", function () {
                 ? "Akses penuh: input transaksi, atur tabungan, ubah data, lihat laporan."
                 : "Lihat seluruh laporan keuangan dan rincian transaksi.";
 
-          if (roleYangDipilih === "owner")
+          if (roleYangDipilih === "owner") {
             document
               .querySelectorAll("#menu-utama .khusus-manajer")
               .forEach((m) => (m.style.display = "none"));
+          } else {
+            document
+              .querySelectorAll("#menu-utama .khusus-manajer")
+              .forEach((m) => (m.style.display = "inline-block"));
+          }
           renderDashboardKeuangan();
         }, 650);
       } else {
@@ -267,6 +273,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "Yakin ingin keluar?",
         () => {
           tampilkanNotifikasi("info", "Sedang keluar...");
+          localStorage.removeItem("roleAktif");
           setTimeout(() => window.location.reload(), 500);
         },
         "Ya, Keluar",
@@ -280,6 +287,13 @@ document.addEventListener("DOMContentLoaded", function () {
   document.addEventListener("click", (e) => {
     const tombol = e.target.closest(".tombol-menu");
     if (!tombol) return;
+
+    const roleAktif = localStorage.getItem("roleAktif");
+    if (roleAktif === "owner" && tombol.classList.contains("khusus-manajer")) {
+      tampilkanNotifikasi("error", "⚠️ Anda tidak memiliki akses ke menu ini.");
+      return;
+    }
+
     document
       .querySelectorAll("#menu-utama .tombol-menu")
       .forEach((m) => m.classList.remove("aktif"));
@@ -304,17 +318,17 @@ document.addEventListener("DOMContentLoaded", function () {
         renderDashboardKeuangan();
         break;
       case "transaksi":
-        if (sapaan) sapaan.textContent = "➕ Input Laporan Harian";
+        if (sapaan) sapaan.textContent = "👌Semangat Dan Teliti 💪";
         if (pesan)
           pesan.textContent =
-            "Catat pemasukan, pengeluaran, dan kasbon harian.";
+            "Jangan lupa catat semua transaksi harian agar laporan keuangan akurat.";
 
         const wadahFormTransaksi = Object.assign(
           document.createElement("div"),
           { id: "wadah-form-transaksi" },
         );
         pesan.parentNode.appendChild(wadahFormTransaksi);
-        renderFormTransaksi(wadahFormTransaksi); // Memanggil fungsi di transaksi.js
+        renderFormTransaksi(wadahFormTransaksi);
         break;
       case "tabungan":
         if (sapaan) sapaan.textContent = "🏦 Pengelolaan Tabungan";
@@ -324,7 +338,7 @@ document.addEventListener("DOMContentLoaded", function () {
           id: "wadah-form-transaksi",
         });
         pesan.parentNode.appendChild(wadahFormTabungan);
-        renderTabungan(wadahFormTabungan); // Memanggil fungsi di transaksi.js
+        renderTabungan(wadahFormTabungan);
         break;
       case "laporan":
         if (sapaan) sapaan.textContent = "📊 Laporan Bulanan";
@@ -335,7 +349,7 @@ document.addEventListener("DOMContentLoaded", function () {
           id: "wadah-form-transaksi",
         });
         pesan.parentNode.appendChild(wadahFormLaporan);
-        renderLaporan(wadahFormLaporan); // Memanggil fungsi di transaksi.js
+        renderLaporan(wadahFormLaporan);
         break;
     }
   });
@@ -366,7 +380,21 @@ document.addEventListener("DOMContentLoaded", function () {
       ]),
     );
   }
+
+  // ==============================================
+  // CEK SESI AKTIF OTOMATIS SAAT HALAMAN DIMUAT
+  // ==============================================
+  const roleTersimpan = localStorage.getItem("roleAktif");
+  if (roleTersimpan === "owner") {
+    document
+      .querySelectorAll("#menu-utama .khusus-manajer")
+      .forEach((m) => (m.style.display = "none"));
+  }
 });
+
+// ==============================================
+// SERVICE WORKER
+// ==============================================
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker

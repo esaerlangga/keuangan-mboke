@@ -504,22 +504,25 @@ body {
   gap: 12px;
 }
 .radio-card {
-  padding: 14px 12px;
+  position: relative;
+  box-sizing: border-box;
+  padding: 14px 18px;
   border: 1.5px solid #e2e8f0;
   border-radius: 10px;
   background: #f8fafc;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  gap: 8px;
   font-weight: 600;
   font-size: 14px;
   transition: all 0.18s ease;
 }
-.radio-card input {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
+
+/* Sembunyikan total titik bawaan browser agar tidak berbayang */
+.radio-card input[type="radio"] {
+  display: none;
 }
 .radio-card .tanda-radio {
   width: 18px;
@@ -571,13 +574,12 @@ body {
   transform: translateY(-1px);
 }
 
-/* ---------- PENGAMAN ---------- */
+/* ---------- PENGAMAN UTAMA HALAMAN LOGIN ---------- */
 body.logged-in input[type="password"],
 body.logged-in #password,
 body.logged-in .tombol-masuk,
 body.logged-in .tombol-role,
 body.logged-in .sub-judul,
-/* ---------- PENGAMAN ---------- */
 body.logged-in #halaman-login {
   display: none !important;
   visibility: hidden !important;
@@ -634,38 +636,6 @@ body.logged-in #halaman-login {
   .kotak-login {
     padding: 30px 22px;
   }
-}
-
-/* --- GRID RINGKASAN UTAMA --- */
-.grid-ringkasan-lengkap {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 24px;
-}
-.kartu-omset {
-  background: #ecfdf5;
-  border-left: 4px solid #047857;
-}
-.kartu-labakotor {
-  background: #fffbeb;
-  border-left: 4px solid #d97706;
-}
-.kartu-lababersih {
-  background: #eff6ff;
-  border-left: 4px solid #1e40af;
-}
-.label-ringkasan {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: #64748b;
-  letter-spacing: 0.2px;
-  margin-bottom: 8px;
-}
-.nilai-ringkasan {
-  font-size: 22px;
-  font-weight: 800;
-  line-height: 1.2;
 }
 
 /* --- TABEL LENGKAP LAPORAN HARIAN --- */

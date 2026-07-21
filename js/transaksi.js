@@ -73,17 +73,15 @@ function renderFormTransaksi(target) {
                 <p>Catat setiap arus uang masuk & keluar secara rinci.</p>
             </div>
             <form id="form-transaksi" autocomplete="off" class="form-grid">
-                <div class="field full">
+              <div class="field full">
                     <label>Jenis Transaksi *</label>
                     <div class="pilih-jenis">
                         <label class="radio-card radio-masuk">
                             <input type="radio" name="jenis" value="masuk" checked>
-                            <span class="tanda-radio"></span>
                             <span class="teks-radio">🟢 UANG MASUK</span>
                         </label>
                         <label class="radio-card radio-keluar">
                             <input type="radio" name="jenis" value="keluar">
-                            <span class="tanda-radio"></span>
                             <span class="teks-radio">🔴 UANG KELUAR</span>
                         </label>
                     </div>
@@ -335,6 +333,9 @@ function renderDashboardKeuangan() {
           <td class="rata-kanan">${formatRupiah(t.jumlah)}</td>
           <td class="rata-kanan ${warna}">${tanda} ${formatRupiah(t.jumlah)}</td>
           <td>${t.keterangan || "—"}</td>
+          <td>
+            <button onclick="hapusTransaksi(${t.id})" style="background:#ef4444; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:12px;">🗑️ Hapus</button>
+          </td>
         </tr>
       `;
     });
@@ -384,7 +385,6 @@ function renderDashboardKeuangan() {
             <th>Laba Kotor</th>
             <th>Laba Bersih</th>
             <th>Keterangan</th>
-            <th>Aksi</th>
           </tr>
         </thead>
         <tbody id="isi-tabel-laporan">${barisRekap}</tbody>
@@ -405,9 +405,9 @@ function renderDashboardKeuangan() {
             <th>Tanggal</th>
             <th>Jenis</th>
             <th>Kategori</th>
-            <th class="rata-kanan">Nominal</th>
-            <th class="rata-kanan">Arus Kas</th>
+         <th class="rata-kanan">Arus Kas</th>
             <th>Keterangan</th>
+            <th>Aksi</th>
           </tr>
         </thead>
         <tbody>${barisRiwayat}</tbody>
@@ -633,3 +633,33 @@ function renderTabungan(target) {
     });
   });
 }
+// ==================================================
+// 🗑️ FUNGSI HAPUS TRANSAKSI
+// ==================================================
+window.hapusTransaksi = function (idTransaksi) {
+  // 1. Munculkan peringatan konfirmasi
+  let konfirmasi = confirm(
+    "Apakah Anda yakin ingin menghapus transaksi ini? Total omset dan laba akan dihitung ulang secara otomatis.",
+  );
+
+  if (konfirmasi) {
+    // 2. Ambil semua data transaksi saat ini
+    let semuaData = ambilSemuaTransaksi();
+
+    // 3. Buat daftar baru yang isinya SEMUA DATA KECUALI data yang ID-nya ditekan
+    let dataBaru = semuaData.filter(
+      (transaksi) => transaksi.id !== idTransaksi,
+    );
+
+    // 4. Simpan daftar baru tersebut ke memori HP
+    simpanSemuaTransaksi(dataBaru);
+
+    // 5. Tampilkan notifikasi sukses
+    if (typeof tampilkanNotifikasi === "function") {
+      tampilkanNotifikasi("berhasil", "✅ Data transaksi berhasil dihapus!");
+    }
+
+    // 6. Refresh tampilan dashboard agar angka uangnya otomatis update
+    renderDashboardKeuangan();
+  }
+};
