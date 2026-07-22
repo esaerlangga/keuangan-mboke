@@ -420,24 +420,39 @@ document.addEventListener("DOMContentLoaded", function () {
     fungsiJikaYa,
     teksTombolYa = "Ya, Lanjutkan",
   ) {
-    let wadah =
-      document.getElementById("wadah-konfirmasi") ||
-      Object.assign(document.createElement("div"), { id: "wadah-konfirmasi" });
-    document.body.appendChild(wadah);
+    // Hapus wadah lama jika ada
+    const wadahLama = document.getElementById("wadah-konfirmasi");
+    if (wadahLama) wadahLama.remove();
+
+    const wadah = document.createElement("div");
+    wadah.id = "wadah-konfirmasi";
+    wadah.className = "wadah-konfirmasi-kustom";
     wadah.innerHTML = `
-      <div class="kotak-konfirmasi">
-        <div class="isi-konfirmasi">
-          <span class="pesan-konfirmasi">${pesan}</span>
-          <div class="tombol-konfirmasi">
-            <button type="button" class="btn-batal">Batal</button>
-            <button type="button" class="btn-ya">${teksTombolYa}</button>
-          </div>
+      <div class="kotak-konfirmasi-kustom">
+        <div class="ikon-konfirmasi">⚠️</div>
+        <h4 class="judul-konfirmasi">Konfirmasi Tindakan</h4>
+        <p class="pesan-konfirmasi">${pesan}</p>
+        <div class="tombol-konfirmasi-kustom">
+          <button type="button" class="btn-konfirmasi-batal">Batal</button>
+          <button type="button" class="btn-konfirmasi-ya">${teksTombolYa}</button>
         </div>
       </div>
     `;
-    wadah.querySelector(".btn-batal").onclick = () => wadah.remove();
-    wadah.querySelector(".btn-ya").onclick = () => {
-      wadah.remove();
+    document.body.appendChild(wadah);
+
+    // Animasi tampil
+    requestAnimationFrame(() => {
+      wadah.classList.add("tampil");
+    });
+
+    const tutup = () => {
+      wadah.classList.remove("tampil");
+      setTimeout(() => wadah.remove(), 200);
+    };
+
+    wadah.querySelector(".btn-konfirmasi-batal").onclick = tutup;
+    wadah.querySelector(".btn-konfirmasi-ya").onclick = () => {
+      tutup();
       fungsiJikaYa();
     };
   }

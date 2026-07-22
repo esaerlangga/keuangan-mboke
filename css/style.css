@@ -723,3 +723,99 @@ body.logged-in #halaman-login {
   opacity: 1 !important;
   pointer-events: auto !important;
 }
+/* ==================================================
+   DESAIN POP-UP KONFIRMASI MODERN & PREMIUM
+   ================================================== */
+.wadah-konfirmasi-kustom {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px) !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease-out;
+  padding: 16px;
+}
+
+.wadah-konfirmasi-kustom.tampil {
+  opacity: 1;
+  visibility: visible;
+}
+
+.kotak-konfirmasi-kustom {
+  background: #ffffff;
+  width: 100%;
+  max-width: 360px;
+  padding: 24px 20px;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(15, 23, 42, 0.22);
+  text-align: center;
+  transform: scale(0.9) translateY(10px);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.wadah-konfirmasi-kustom.tampil .kotak-konfirmasi-kustom {
+  transform: scale(1) translateY(0);
+}
+
+.ikon-konfirmasi {
+  font-size: 36px;
+  margin-bottom: 8px;
+}
+
+.judul-konfirmasi {
+  font-size: 17px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.pesan-konfirmasi {
+  font-size: 14px;
+  color: #475569;
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.tombol-konfirmasi-kustom {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-konfirmasi-batal,
+.btn-konfirmasi-ya {
+  flex: 1;
+  padding: 11px 0;
+  border-radius: 10px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.btn-konfirmasi-batal {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-konfirmasi-batal:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.btn-konfirmasi-ya {
+  background: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25);
+}
+
+.btn-konfirmasi-ya:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
