@@ -542,57 +542,64 @@ body.logged-in #halaman-login {
   top: -9999px !important;
 }
 
-/* ---------- TABEL LAPORAN HARIAN ---------- */
-.bungkus-tabel h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #0f172a;
-  margin: 0 0 12px;
-}
+/* --- PERBAIKAN TABEL LAPORAN HARIAN LENGKAP --- */
 .tabel-responsif {
   width: 100%;
   overflow-x: auto;
   border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.07);
+  border: 1px solid #cbd5e1; /* Garis bingkai luar lebih tegas */
   background: #ffffff;
 }
-.tabel-transaksi-lengkap,
-.tabel-transaksi {
+
+.tabel-transaksi-lengkap {
   width: 100%;
   border-collapse: collapse;
-  font-size: 12.5px;
-  min-width: 1000px;
+  font-size: 13px;
+  min-width: 1600px;
 }
-.tabel-transaksi-lengkap thead th,
-.tabel-transaksi thead th {
-  background: #f8fafc;
-  color: #334155;
+
+.tabel-transaksi-lengkap thead th {
+  background: #f1f5f9;
+  color: #1e293b;
   font-weight: 700;
   text-align: center;
-  padding: 12px 8px;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 14px 10px;
+  border-bottom: 2px solid #cbd5e1;
+  border-right: 1px solid #e2e8f0; /* Garis vertikal antar kolom */
   white-space: nowrap;
 }
-.tabel-transaksi-lengkap tbody td,
-.tabel-transaksi tbody td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #f1f5f9;
+
+.tabel-transaksi-lengkap tbody td {
+  padding: 12px 10px;
+  border-bottom: 1px solid #cbd5e1; /* GARIS PEMBATAS ANTAR BARIS JELAS */
+  border-right: 1px solid #e2e8f0; /* GARIS PEMBATAS ANTAR KOLOM JELAS */
   color: #0f172a;
   text-align: right;
   vertical-align: middle;
 }
+
+/* Mengatur perataan teks kolom tertentu */
 .tabel-transaksi-lengkap tbody td:first-child,
-.tabel-transaksi-lengkap tbody td:nth-child(7),
-.tabel-transaksi-lengkap tbody td:nth-child(14) {
+.tabel-transaksi-lengkap tbody td:nth-child(7) {
   text-align: left;
 }
-.rata-kanan {
-  text-align: right !important;
+
+/* KOTAK KETERANGAN: Dibuat lebih lebar & leluasa ke samping */
+.tabel-transaksi-lengkap tbody td:nth-child(14) {
+  text-align: left;
+  min-width: 380px; /* Kolom keterangan dilebarkan */
+  max-width: 500px; /* Membatasi agar tidak terlalu melebar ekstrem */
+  white-space: normal; /* Teks mengalir rapi ke samping */
+  word-break: break-word;
+  line-height: 1.5;
 }
-.tabel-kosong {
-  padding: 30px;
-  text-align: center;
-  color: #94a3b8;
+
+.tabel-transaksi-lengkap tbody tr:hover {
+  background: #f8fafc;
+}
+
+.tabel-transaksi-lengkap tbody tr:nth-child(even) {
+  background: #fafafa;
 }
 
 /* ---------- KARTU RINGKASAN DASHBOARD ---------- */
