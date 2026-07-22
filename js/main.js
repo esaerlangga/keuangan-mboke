@@ -51,33 +51,117 @@ window.prompt = function (judul, petunjuk = "") {
 // FUNGSI UTAMA HITUNG DASHBOARD & RENDER SEMUA TABEL
 // ==============================================
 function muatDashboardUtama() {
-  const dataLaporan = JSON.parse(localStorage.getItem("laporanHarian") || "[]");
+  // 1. Ambil data riwayat transaksi satuan
   const dataRiwayat = JSON.parse(
     localStorage.getItem("data_transaksi_sambel_tempong") || "[]",
   );
 
-  // 1. Hitung Total Ringkasan Akumulasi
+  // 2. LOGIKA OTOMATIS: Rekap/gabungkan transaksi satuan berdasarkan TANGGAL
+  const rekapPerTanggal = {};
+
+  dataRiwayat.forEach((t) => {
+    const tgl = t.tanggal;
+    if (!tgl) return;
+
+    if (!rekapPerTanggal[tgl]) {
+      rekapPerTanggal[tgl] = {
+        tanggal: tgl,
+        tunai: 0,
+        qrisMasuk: 0,
+        transfer: 0,
+        tabunganWajib: 495000, // Standar Alokasi Tabungan Harian
+        kasbon: 0,
+        namaKasbon: [],
+        belanjaPasar: 0,
+        opsRiil: 0,
+        qrisKeluar: 0,
+        ditalangiOwner: 0,
+        bayarOwner: 0,
+        keterangan: [],
+      };
+    }
+
+    const item = rekapPerTanggal[tgl];
+    const nominal = Number(t.jumlah || 0);
+
+    // Kelompokkan nominal ke kolom yang tepat sesuai Kategori Input
+    switch (t.kategori) {
+      case "tunai":
+        item.tunai += nominal;
+        break;
+      case "qris_masuk":
+        item.qrisMasuk += nominal;
+        break;
+      case "transfer":
+        item.transfer += nominal;
+        break;
+      case "belanja_pasar":
+        item.belanjaPasar += nominal;
+        break;
+      case "ops_riil":
+      case "makan_karyawan":
+        item.opsRiil += nominal;
+        break;
+      case "qris_keluar":
+        item.qrisKeluar += nominal;
+        break;
+      case "kasbon":
+        item.kasbon += nominal;
+        if (t.keterangan) item.namaKasbon.push(t.keterangan);
+        break;
+      case "talangan_owner":
+        item.ditalangiOwner += nominal;
+        break;
+      case "bayar_owner":
+        item.bayarOwner += nominal;
+        break;
+    }
+
+    if (t.keterangan && t.kategori !== "kasbon") {
+      item.keterangan.push(t.keterangan);
+    }
+  });
+
+  // 3. Hitung Rumus Omset, Laba Kotor, & Laba Bersih per Tanggal
+  const dataLaporan = Object.values(rekapPerTanggal).map((row) => {
+    const omset = row.tunai + row.qrisMasuk + row.transfer;
+    const totalPengeluaranOps =
+      row.belanjaPasar + row.opsRiil + row.qrisKeluar + row.ditalangiOwner;
+
+    const labaKotor = omset - totalPengeluaranOps;
+    const labaBersih = labaKotor - row.tabunganWajib - row.kasbon;
+
+    return {
+      ...row,
+      omset: omset,
+      labaKotor: labaKotor,
+      labaBersih: labaBersih,
+      namaKaryawanKasbon: row.namaKasbon.join(", ") || "-",
+      keterangan: row.keterangan.join(" | ") || "-",
+    };
+  });
+
+  // Simpan hasil gabungan ke localStorage 'laporanHarian'
+  localStorage.setItem("laporanHarian", JSON.stringify(dataLaporan));
+
+  // 4. Hitung Akumulasi Total Kartu Atas & Bu Dewi
   let totalOmset = 0;
   let totalLabaKotor = 0;
   let totalLabaBersih = 0;
-
-  // Akumulasi Rumus Bu Dewi
   let totalDitalangiBuDewi = 0;
   let totalSudahDibayarBuDewi = 0;
 
   dataLaporan.forEach((item) => {
-    totalOmset += Number(item.omset || 0);
-    totalLabaKotor += Number(item.labaKotor || 0);
-    totalLabaBersih += Number(item.labaBersih || 0);
-
-    totalDitalangiBuDewi += Number(item.ditalangiOwner || 0);
-    totalSudahDibayarBuDewi += Number(item.bayarOwner || 0);
+    totalOmset += item.omset;
+    totalLabaKotor += item.labaKotor;
+    totalLabaBersih += item.labaBersih;
+    totalDitalangiBuDewi += item.ditalangiOwner;
+    totalSudahDibayarBuDewi += item.bayarOwner;
   });
 
-  // Hitung Sisa Kekurangan Pembayaran ke Bu Dewi
   let sisaKekuranganBuDewi = totalDitalangiBuDewi - totalSudahDibayarBuDewi;
 
-  // Tampilkan Nilai Ringkasan ke Kartu Dashboard
+  // Update Nilai ke Kartu Dashboard Atas
   const elOmset = document.getElementById("nilai-omset");
   const elLabaKotor = document.getElementById("nilai-labakotor");
   const elLabaBersih = document.getElementById("nilai-lababersih");
@@ -88,62 +172,61 @@ function muatDashboardUtama() {
   if (elLabaBersih)
     elLabaBersih.innerText = `Rp ${totalLabaBersih.toLocaleString("id-ID")}`;
 
-  // 2. Beri jeda singkat agar DOM siap, lalu render semua tabel
+  // 5. Render Semua Tabel ke Layar
   setTimeout(() => {
     const tbodyLaporan = document.getElementById("isi-tabel-laporan");
     const elWaktu = document.getElementById("waktu-perbarui");
 
-    // A. TABEL 1: LAPORAN HARIAN
+    // A. TABEL LAPORAN HARIAN LENGKAP
     if (tbodyLaporan) {
       if (dataLaporan.length === 0) {
         tbodyLaporan.innerHTML = `<tr><td colspan="15" class="tabel-kosong">Belum ada data laporan harian. Silakan input transaksi baru.</td></tr>`;
       } else {
         tbodyLaporan.innerHTML = dataLaporan
-          .map((row) => {
-            const namaKasbonFix =
-              row.namaKaryawanKasbon || row.namaKasbon || "-";
-            return `
+          .map(
+            (row) => `
               <tr>
-                <td>${row.tanggal || "-"}</td>
-                <td>Rp ${(row.tunai || 0).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.qrisMasuk || 0).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.transfer || 0).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.tabunganWajib || 495000).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.kasbon || 0).toLocaleString("id-ID")}</td>
-                <td>${namaKasbonFix}</td>
-                <td>Rp ${(row.belanjaPasar || 0).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.opsRiil || 0).toLocaleString("id-ID")}</td>
-                <td>Rp ${(row.qrisKeluar || 0).toLocaleString("id-ID")}</td>
-                <td><strong>Rp ${(row.omset || 0).toLocaleString("id-ID")}</strong></td>
-                <td><strong>Rp ${(row.labaKotor || 0).toLocaleString("id-ID")}</strong></td>
-                <td><strong>Rp ${(row.labaBersih || 0).toLocaleString("id-ID")}</strong></td>
-                <td style="max-width: 250px; font-size: 12px;">${row.keterangan || "-"}</td>
+                <td>${row.tanggal}</td>
+                <td>Rp ${row.tunai.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.qrisMasuk.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.transfer.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.tabunganWajib.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.kasbon.toLocaleString("id-ID")}</td>
+                <td>${row.namaKaryawanKasbon}</td>
+                <td>Rp ${row.belanjaPasar.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.opsRiil.toLocaleString("id-ID")}</td>
+                <td>Rp ${row.qrisKeluar.toLocaleString("id-ID")}</td>
+                <td><strong>Rp ${row.omset.toLocaleString("id-ID")}</strong></td>
+                <td><strong>Rp ${row.labaKotor.toLocaleString("id-ID")}</strong></td>
+                <td><strong>Rp ${row.labaBersih.toLocaleString("id-ID")}</strong></td>
+                <td style="max-width: 250px; font-size: 12px;">${row.keterangan}</td>
                 <td><span style="color:#22c55e; font-weight:bold; font-size:12px;">✓ Sukses</span></td>
               </tr>
-            `;
-          })
+            `,
+          )
           .join("");
       }
     }
 
-    // B. BUAT WADAH & TABEL KHUSUS BU DEWI (KEKURANGAN & PEMBAYARAN)
+    // B. RENDERING 2 TABEL KHUSUS BU DEWI
     const wadahTabelUtama = document.getElementById("wadah-tabel-transaksi");
-    if (
-      wadahTabelUtama &&
-      !document.getElementById("wadah-tanggungan-budewi")
-    ) {
-      const elBuDewi = document.createElement("div");
-      elBuDewi.id = "wadah-tanggungan-budewi";
-      elBuDewi.style.marginTop = "30px";
-      elBuDewi.style.padding = "20px";
-      elBuDewi.style.background = "#fff8e6";
-      elBuDewi.style.border = "1px solid #ffd699";
-      elBuDewi.style.borderRadius = "14px";
+    if (wadahTabelUtama) {
+      let elBuDewi = document.getElementById("wadah-tanggungan-budewi");
+      if (!elBuDewi) {
+        elBuDewi = document.createElement("div");
+        elBuDewi.id = "wadah-tanggungan-budewi";
+        elBuDewi.style.marginTop = "30px";
+        elBuDewi.style.padding = "20px";
+        elBuDewi.style.background = "#fff8e6";
+        elBuDewi.style.border = "1px solid #ffd699";
+        elBuDewi.style.borderRadius = "14px";
+        wadahTabelUtama.appendChild(elBuDewi);
+      }
 
       elBuDewi.innerHTML = `
         <h3 style="color: #92400e; margin-bottom: 15px;">👑 Rekapitulasi Pembayaran & Kekurangan ke Bu Dewi</h3>
         
-        <!-- TABEL 1: KEKURANGAN PEMBAYARAN KE BU DEWI -->
+        <!-- TABEL KEKURANGAN PEMBAYARAN KE BU DEWI -->
         <div class="tabel-responsif" style="margin-bottom: 20px;">
           <table class="tabel-transaksi">
             <thead>
@@ -157,15 +240,15 @@ function muatDashboardUtama() {
             <tbody>
               <tr>
                 <td><strong>Tanggungan Restoran</strong></td>
-                <td class="rata-kanan">Rp <span id="val-ditalangi">0</span></td>
-                <td class="rata-kanan" style="color: #16a34a;">Rp <span id="val-dibayar">0</span></td>
-                <td class="rata-kanan" style="font-weight: bold; color: #dc2626; font-size: 16px;">Rp <span id="val-kekurangan">0</span></td>
+                <td class="rata-kanan">Rp ${totalDitalangiBuDewi.toLocaleString("id-ID")}</td>
+                <td class="rata-kanan" style="color: #16a34a;">Rp ${totalSudahDibayarBuDewi.toLocaleString("id-ID")}</td>
+                <td class="rata-kanan" style="font-weight: bold; color: #dc2626; font-size: 16px;">Rp ${Math.max(0, sisaKekuranganBuDewi).toLocaleString("id-ID")}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- TABEL 2: RIWAYAT PEMBAYARAN KE BU DEWI -->
+        <!-- TABEL RIWAYAT PEMBAYARAN KE BU DEWI -->
         <h4 style="color: #92400e; margin: 15px 0 10px 0;">📜 Riwayat Pembayaran ke Bu Dewi</h4>
         <div class="tabel-responsif">
           <table class="tabel-transaksi">
@@ -181,46 +264,34 @@ function muatDashboardUtama() {
           </table>
         </div>
       `;
-      wadahTabelUtama.appendChild(elBuDewi);
-    }
 
-    // UPDATE NILAI TABEL KEKURANGAN BU DEWI
-    const elDitalangi = document.getElementById("val-ditalangi");
-    const elDibayar = document.getElementById("val-dibayar");
-    const elKekurangan = document.getElementById("val-kekurangan");
-
-    if (elDitalangi)
-      elDitalangi.innerText = totalDitalangiBuDewi.toLocaleString("id-ID");
-    if (elDibayar)
-      elDibayar.innerText = totalSudahDibayarBuDewi.toLocaleString("id-ID");
-    if (elKekurangan)
-      elKekurangan.innerText = Math.max(0, sisaKekuranganBuDewi).toLocaleString(
-        "id-ID",
+      const tbodyBayarBuDewi = document.getElementById(
+        "isi-tabel-bayar-budewi",
       );
-
-    // ISI TABEL RIWAYAT PEMBAYARAN KE BU DEWI
-    const tbodyBayarBuDewi = document.getElementById("isi-tabel-bayar-budewi");
-    if (tbodyBayarBuDewi) {
-      const dataBayar = dataRiwayat.filter((t) => t.kategori === "bayar_owner");
-      if (dataBayar.length === 0) {
-        tbodyBayarBuDewi.innerHTML = `<tr><td colspan="4" class="tabel-kosong">Belum ada riwayat pembayaran ke Bu Dewi.</td></tr>`;
-      } else {
-        tbodyBayarBuDewi.innerHTML = dataBayar
-          .map(
-            (t, i) => `
-            <tr>
-              <td>${i + 1}</td>
-              <td>${t.tanggal}</td>
-              <td class="rata-kanan" style="font-weight:bold; color:#16a34a;">Rp ${(t.jumlah || 0).toLocaleString("id-ID")}</td>
-              <td>${t.keterangan || "Pembayaran ke Bu Dewi"}</td>
-            </tr>
-          `,
-          )
-          .join("");
+      if (tbodyBayarBuDewi) {
+        const dataBayar = dataRiwayat.filter(
+          (t) => t.kategori === "bayar_owner",
+        );
+        if (dataBayar.length === 0) {
+          tbodyBayarBuDewi.innerHTML = `<tr><td colspan="4" class="tabel-kosong">Belum ada riwayat pembayaran ke Bu Dewi.</td></tr>`;
+        } else {
+          tbodyBayarBuDewi.innerHTML = dataBayar
+            .map(
+              (t, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${t.tanggal}</td>
+                <td class="rata-kanan" style="font-weight:bold; color:#16a34a;">Rp ${(t.jumlah || 0).toLocaleString("id-ID")}</td>
+                <td>${t.keterangan || "Pembayaran ke Bu Dewi"}</td>
+              </tr>
+            `,
+            )
+            .join("");
+        }
       }
     }
 
-    // C. TABEL DETAIL TRANSAKSI SATUAN
+    // C. TABEL DETAIL TRANSAKSI SATUAN (DI BAGIAN BAWAH)
     if (
       wadahTabelUtama &&
       !document.getElementById("wadah-tabel-riwayat-satuan")
