@@ -1,8 +1,7 @@
 // ==============================================
-// PENGGANTI PROMPT KUSTOM (AMARAH & ANTI-AUTO POPUP)
+// PENGGANTI PROMPT KUSTOM
 // ==============================================
 window.prompt = function (judul, petunjuk = "") {
-  // Hapus wadah lama jika masih ada tertinggal
   const wadahLama = document.getElementById("wadah-input-kustom");
   if (wadahLama) wadahLama.remove();
 
@@ -25,7 +24,6 @@ window.prompt = function (judul, petunjuk = "") {
   const input = document.getElementById("nilai-input");
   input.value = "";
 
-  // Berikan jeda mikroskopis sebelum menambahkan class tampil
   requestAnimationFrame(() => {
     wadah.classList.add("tampil");
     input.focus();
@@ -54,15 +52,88 @@ window.prompt = function (judul, petunjuk = "") {
 };
 
 // ==============================================
+// FUNGSI NOTIFIKASI & KONFIRMASI MODERN
+// ==============================================
+function tampilkanNotifikasi(jenis, pesan, durasi = 3400) {
+  const wadah = document.getElementById("wadah-notifikasi");
+  if (!wadah) return;
+
+  const ikonSvg = {
+    berhasil: `<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>`,
+    error: `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
+    warning: `<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+    info: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`,
+  };
+
+  const el = document.createElement("div");
+  el.className = `notifikasi notif-${jenis}`;
+  el.innerHTML = `
+    <span class="ikon-notif">${ikonSvg[jenis] || ikonSvg.info}</span>
+    <span class="pesan-notif">${pesan}</span>
+    <button type="button" class="tutup-notif" aria-label="Tutup">×</button>
+  `;
+
+  wadah.prepend(el);
+  const timer = setTimeout(() => {
+    el.classList.add("notif-hilang");
+    setTimeout(() => el.remove(), 350);
+  }, durasi);
+
+  el.querySelector(".tutup-notif").addEventListener("click", () => {
+    clearTimeout(timer);
+    el.classList.add("notif-hilang");
+    setTimeout(() => el.remove(), 350);
+  });
+}
+
+function tampilkanKonfirmasi(
+  pesan,
+  fungsiJikaYa,
+  teksTombolYa = "Ya, Lanjutkan",
+) {
+  const wadahLama = document.getElementById("wadah-konfirmasi");
+  if (wadahLama) wadahLama.remove();
+
+  const wadah = document.createElement("div");
+  wadah.id = "wadah-konfirmasi";
+  wadah.className = "wadah-konfirmasi-kustom";
+  wadah.innerHTML = `
+    <div class="kotak-konfirmasi-kustom">
+      <div class="ikon-konfirmasi">⚠️</div>
+      <h4 class="judul-konfirmasi">Konfirmasi Tindakan</h4>
+      <p class="pesan-konfirmasi">${pesan}</p>
+      <div class="tombol-konfirmasi-kustom">
+        <button type="button" class="btn-konfirmasi-batal">Batal</button>
+        <button type="button" class="btn-konfirmasi-ya">${teksTombolYa}</button>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wadah);
+
+  requestAnimationFrame(() => {
+    wadah.classList.add("tampil");
+  });
+
+  const tutup = () => {
+    wadah.classList.remove("tampil");
+    setTimeout(() => wadah.remove(), 200);
+  };
+
+  wadah.querySelector(".btn-konfirmasi-batal").onclick = tutup;
+  wadah.querySelector(".btn-konfirmasi-ya").onclick = () => {
+    tutup();
+    fungsiJikaYa();
+  };
+}
+
+// ==============================================
 // FUNGSI UTAMA HITUNG DASHBOARD & RENDER SEMUA TABEL
 // ==============================================
 function muatDashboardUtama() {
-  // 1. Ambil data riwayat transaksi satuan
   const dataRiwayat = JSON.parse(
     localStorage.getItem("data_transaksi_sambel_tempong") || "[]",
   );
 
-  // 2. LOGIKA OTOMATIS: Rekap/gabungkan transaksi satuan berdasarkan TANGGAL
   const rekapPerTanggal = {};
 
   dataRiwayat.forEach((t) => {
@@ -75,7 +146,7 @@ function muatDashboardUtama() {
         tunai: 0,
         qrisMasuk: 0,
         transfer: 0,
-        tabunganWajib: 495000, // Standar Alokasi Tabungan Harian
+        tabunganWajib: 495000,
         kasbon: 0,
         namaKasbon: [],
         belanjaPasar: 0,
@@ -90,7 +161,6 @@ function muatDashboardUtama() {
     const item = rekapPerTanggal[tgl];
     const nominal = Number(t.jumlah || 0);
 
-    // Kelompokkan nominal ke kolom yang tepat sesuai Kategori Input
     switch (t.kategori) {
       case "tunai":
         item.tunai += nominal;
@@ -108,8 +178,8 @@ function muatDashboardUtama() {
         item.opsRiil += nominal;
         break;
       case "makan_karyawan":
-        item.opsRiil += nominal; // Nominal masuk ke Ops Riil
-        item.keterangan.push(t.keterangan || "Uang Makan Karyawan"); // Rekam keterangan otomatis
+        item.opsRiil += nominal;
+        item.keterangan.push(t.keterangan || "Uang Makan Karyawan");
         break;
       case "qris_keluar":
         item.qrisKeluar += nominal;
@@ -126,7 +196,6 @@ function muatDashboardUtama() {
         break;
     }
 
-    // Rekam keterangan kategori lain jika ada & bukan kasbon/makan_karyawan
     if (
       t.keterangan &&
       t.kategori !== "kasbon" &&
@@ -136,7 +205,6 @@ function muatDashboardUtama() {
     }
   });
 
-  // 3. Hitung Rumus Omset, Laba Kotor, & Laba Bersih per Tanggal
   const dataLaporan = Object.values(rekapPerTanggal).map((row) => {
     const omset = row.tunai + row.qrisMasuk + row.transfer;
     const totalPengeluaranOps =
@@ -155,10 +223,8 @@ function muatDashboardUtama() {
     };
   });
 
-  // Simpan hasil gabungan ke localStorage 'laporanHarian'
   localStorage.setItem("laporanHarian", JSON.stringify(dataLaporan));
 
-  // 4. Hitung Akumulasi Total Kartu Atas & Bu Dewi
   let totalOmset = 0;
   let totalLabaKotor = 0;
   let totalLabaBersih = 0;
@@ -175,7 +241,6 @@ function muatDashboardUtama() {
 
   let sisaKekuranganBuDewi = totalDitalangiBuDewi - totalSudahDibayarBuDewi;
 
-  // Update Nilai ke Kartu Dashboard Atas
   const elOmset = document.getElementById("nilai-omset");
   const elLabaKotor = document.getElementById("nilai-labakotor");
   const elLabaBersih = document.getElementById("nilai-lababersih");
@@ -186,12 +251,10 @@ function muatDashboardUtama() {
   if (elLabaBersih)
     elLabaBersih.innerText = `Rp ${totalLabaBersih.toLocaleString("id-ID")}`;
 
-  // 5. Render Semua Tabel ke Layar
   setTimeout(() => {
     const tbodyLaporan = document.getElementById("isi-tabel-laporan");
     const elWaktu = document.getElementById("waktu-perbarui");
 
-    // A. TABEL LAPORAN HARIAN LENGKAP
     if (tbodyLaporan) {
       if (dataLaporan.length === 0) {
         tbodyLaporan.innerHTML = `<tr><td colspan="15" class="tabel-kosong">Belum ada data laporan harian. Silakan input transaksi baru.</td></tr>`;
@@ -222,7 +285,6 @@ function muatDashboardUtama() {
       }
     }
 
-    // B. RENDERING 2 TABEL KHUSUS BU DEWI
     const wadahTabelUtama = document.getElementById("wadah-tabel-transaksi");
     if (wadahTabelUtama) {
       let elBuDewi = document.getElementById("wadah-tanggungan-budewi");
@@ -239,8 +301,6 @@ function muatDashboardUtama() {
 
       elBuDewi.innerHTML = `
         <h3 style="color: #92400e; margin-bottom: 15px;">👑 Rekapitulasi Pembayaran & Kekurangan ke Bu Dewi</h3>
-        
-        <!-- TABEL KEKURANGAN PEMBAYARAN KE BU DEWI -->
         <div class="tabel-responsif" style="margin-bottom: 20px;">
           <table class="tabel-transaksi">
             <thead>
@@ -262,7 +322,6 @@ function muatDashboardUtama() {
           </table>
         </div>
 
-        <!-- TABEL RIWAYAT PEMBAYARAN KE BU DEWI -->
         <h4 style="color: #92400e; margin: 15px 0 10px 0;">📜 Riwayat Pembayaran ke Bu Dewi</h4>
         <div class="tabel-responsif">
           <table class="tabel-transaksi">
@@ -305,7 +364,6 @@ function muatDashboardUtama() {
       }
     }
 
-    // C. TABEL DETAIL TRANSAKSI SATUAN (DI BAGIAN BAWAH)
     if (
       wadahTabelUtama &&
       !document.getElementById("wadah-tabel-riwayat-satuan")
@@ -384,79 +442,6 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("laporanHarian", JSON.stringify([]));
   }
 
-  function tampilkanNotifikasi(jenis, pesan, durasi = 3400) {
-    const wadah = document.getElementById("wadah-notifikasi");
-    if (!wadah) return;
-
-    const ikonSvg = {
-      berhasil: `<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>`,
-      error: `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>`,
-      warning: `<svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
-      info: `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>`,
-    };
-
-    const el = document.createElement("div");
-    el.className = `notifikasi notif-${jenis}`;
-    el.innerHTML = `
-      <span class="ikon-notif">${ikonSvg[jenis]}</span>
-      <span class="pesan-notif">${pesan}</span>
-      <button type="button" class="tutup-notif" aria-label="Tutup">×</button>
-    `;
-
-    wadah.prepend(el);
-    const timer = setTimeout(() => {
-      el.classList.add("notif-hilang");
-      setTimeout(() => el.remove(), 350);
-    }, durasi);
-    el.querySelector(".tutup-notif").addEventListener("click", () => {
-      clearTimeout(timer);
-      el.classList.add("notif-hilang");
-      setTimeout(() => el.remove(), 350);
-    });
-  }
-
-  function tampilkanKonfirmasi(
-    pesan,
-    fungsiJikaYa,
-    teksTombolYa = "Ya, Lanjutkan",
-  ) {
-    // Hapus wadah lama jika ada
-    const wadahLama = document.getElementById("wadah-konfirmasi");
-    if (wadahLama) wadahLama.remove();
-
-    const wadah = document.createElement("div");
-    wadah.id = "wadah-konfirmasi";
-    wadah.className = "wadah-konfirmasi-kustom";
-    wadah.innerHTML = `
-      <div class="kotak-konfirmasi-kustom">
-        <div class="ikon-konfirmasi">⚠️</div>
-        <h4 class="judul-konfirmasi">Konfirmasi Tindakan</h4>
-        <p class="pesan-konfirmasi">${pesan}</p>
-        <div class="tombol-konfirmasi-kustom">
-          <button type="button" class="btn-konfirmasi-batal">Batal</button>
-          <button type="button" class="btn-konfirmasi-ya">${teksTombolYa}</button>
-        </div>
-      </div>
-    `;
-    document.body.appendChild(wadah);
-
-    // Animasi tampil
-    requestAnimationFrame(() => {
-      wadah.classList.add("tampil");
-    });
-
-    const tutup = () => {
-      wadah.classList.remove("tampil");
-      setTimeout(() => wadah.remove(), 200);
-    };
-
-    wadah.querySelector(".btn-konfirmasi-batal").onclick = tutup;
-    wadah.querySelector(".btn-konfirmasi-ya").onclick = () => {
-      tutup();
-      fungsiJikaYa();
-    };
-  }
-
   document.addEventListener("click", (e) => {
     const tombolRole = e.target.closest(".tombol-role");
     if (tombolRole) {
@@ -524,7 +509,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   document.getElementById("password")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") tombolMasuk.click();
+    if (e.key === "Enter") tombolMasuk?.click();
   });
 
   document.addEventListener("click", (e) => {
@@ -557,13 +542,11 @@ document.addEventListener("DOMContentLoaded", function () {
     const elRingkasan = document.getElementById("ringkasan-keuangan");
     const elWadahTabel = document.getElementById("wadah-tabel-transaksi");
 
-    // Hapus wadah konten fitur lama jika ada
     document.getElementById("wadah-konten-fitur")?.remove();
 
     if (elRingkasan) elRingkasan.style.display = "none";
     if (elWadahTabel) elWadahTabel.style.display = "none";
 
-    // Siapkan wadah konten baru
     const wadahKontenUtama =
       document.querySelector(".bungkus-konten") ||
       document.getElementById("konten-utama");
@@ -573,18 +556,15 @@ document.addEventListener("DOMContentLoaded", function () {
     switch (menu) {
       case "dashboard":
         const roleSaatIni = localStorage.getItem("roleAktif");
-        if (sapaan) {
+        if (sapaan)
           sapaan.textContent =
             roleSaatIni === "owner"
               ? "Selamat datang, Bu Dewi😊"
               : "Selamat datang, Esa😊";
-        }
-        if (pesan) {
+        if (pesan)
           pesan.textContent = "Ringkasan arus kas & laporan harian lengkap.";
-        }
         if (elRingkasan) elRingkasan.style.display = "grid";
         if (elWadahTabel) elWadahTabel.style.display = "block";
-
         muatDashboardUtama();
         break;
 
@@ -593,7 +573,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (pesan)
           pesan.textContent =
             "Jangan lupa catat semua transaksi harian agar laporan keuangan akurat.";
-
         wadahKontenUtama.appendChild(wadahFitur);
         if (typeof window.renderFormTransaksi === "function") {
           window.renderFormTransaksi(wadahFitur);
@@ -605,7 +584,6 @@ document.addEventListener("DOMContentLoaded", function () {
       case "tabungan":
         if (sapaan) sapaan.textContent = "🏦 Pengelolaan Tabungan";
         if (pesan) pesan.textContent = "Sisihkan uang ke pos wajib.";
-
         wadahKontenUtama.appendChild(wadahFitur);
         if (typeof window.renderTabungan === "function") {
           window.renderTabungan(wadahFitur);
@@ -618,7 +596,6 @@ document.addEventListener("DOMContentLoaded", function () {
         if (sapaan) sapaan.textContent = "📊 Laporan Bulanan";
         if (pesan)
           pesan.textContent = "Rekap data harian jadi laporan siap cetak.";
-
         wadahKontenUtama.appendChild(wadahFitur);
         if (typeof window.renderLaporan === "function") {
           window.renderLaporan(wadahFitur);
@@ -644,25 +621,14 @@ document.addEventListener("DOMContentLoaded", function () {
         roleTersimpan === "manajer" ? "👨‍💼 Esa (Manajer)" : "👑 Bu Dewi (Owner)";
       labelRole.className = `chip-role chip-${roleTersimpan}`;
     }
-    if (sapaan) {
+    if (sapaan)
       sapaan.textContent =
         roleTersimpan === "owner"
           ? "Selamat datang, Bu Dewi😊"
           : "Selamat datang, Esa😊";
-    }
-    if (pesan) {
+    if (pesan)
       pesan.textContent = "Ringkasan arus kas & laporan harian lengkap.";
-    }
 
     muatDashboardUtama();
   }
 });
-
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker
-      .register("./sw.js")
-      .then((reg) => console.log("Service Worker terdaftar!", reg))
-      .catch((err) => console.log("Service Worker gagal:", err));
-  });
-}
