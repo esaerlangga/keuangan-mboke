@@ -21,12 +21,17 @@ window.prompt = function (judul, petunjuk = "") {
   }
 
   const wadah = document.getElementById("wadah-input-kustom");
-  document.getElementById("judul-input").textContent = judul;
-  document.getElementById("petunjuk-input").textContent = petunjuk;
+  const elJudul = document.getElementById("judul-input");
+  const elPetunjuk = document.getElementById("petunjuk-input");
   const input = document.getElementById("nilai-input");
+
+  if (elJudul) elJudul.textContent = judul || "Input Data";
+  if (elPetunjuk)
+    elPetunjuk.textContent = petunjuk || "Masukkan nominal di bawah ini:";
+
   input.value = "";
   wadah.classList.add("tampil");
-  input.focus();
+  setTimeout(() => input.focus(), 50);
 
   return new Promise((resolve) => {
     const tutup = () => {
@@ -99,8 +104,11 @@ function muatDashboardUtama() {
         item.belanjaPasar += nominal;
         break;
       case "ops_riil":
-      case "makan_karyawan":
         item.opsRiil += nominal;
+        break;
+      case "makan_karyawan":
+        item.opsRiil += nominal; // Nominal masuk ke Ops Riil
+        item.keterangan.push(t.keterangan || "Uang Makan Karyawan"); // Rekam keterangan otomatis
         break;
       case "qris_keluar":
         item.qrisKeluar += nominal;
@@ -117,7 +125,12 @@ function muatDashboardUtama() {
         break;
     }
 
-    if (t.keterangan && t.kategori !== "kasbon") {
+    // Rekam keterangan kategori lain jika ada & bukan kasbon/makan_karyawan
+    if (
+      t.keterangan &&
+      t.kategori !== "kasbon" &&
+      t.kategori !== "makan_karyawan"
+    ) {
       item.keterangan.push(t.keterangan);
     }
   });
@@ -512,7 +525,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // NAVIGASI MENU UTAMA (DIPERBAIKI AGAR KONTEN PER MENU TAMPIL SEMPURNA)
+  // NAVIGASI MENU UTAMA
   document.addEventListener("click", (e) => {
     const tombol = e.target.closest(".tombol-menu");
     if (!tombol) return;
@@ -566,8 +579,11 @@ document.addEventListener("DOMContentLoaded", function () {
             "Jangan lupa catat semua transaksi harian agar laporan keuangan akurat.";
 
         wadahKontenUtama.appendChild(wadahFitur);
-        if (typeof renderFormTransaksi === "function")
+        if (typeof window.renderFormTransaksi === "function") {
+          window.renderFormTransaksi(wadahFitur);
+        } else if (typeof renderFormTransaksi === "function") {
           renderFormTransaksi(wadahFitur);
+        }
         break;
 
       case "tabungan":
@@ -575,7 +591,11 @@ document.addEventListener("DOMContentLoaded", function () {
         if (pesan) pesan.textContent = "Sisihkan uang ke pos wajib.";
 
         wadahKontenUtama.appendChild(wadahFitur);
-        if (typeof renderTabungan === "function") renderTabungan(wadahFitur);
+        if (typeof window.renderTabungan === "function") {
+          window.renderTabungan(wadahFitur);
+        } else if (typeof renderTabungan === "function") {
+          renderTabungan(wadahFitur);
+        }
         break;
 
       case "laporan":
@@ -584,7 +604,11 @@ document.addEventListener("DOMContentLoaded", function () {
           pesan.textContent = "Rekap data harian jadi laporan siap cetak.";
 
         wadahKontenUtama.appendChild(wadahFitur);
-        if (typeof renderLaporan === "function") renderLaporan(wadahFitur);
+        if (typeof window.renderLaporan === "function") {
+          window.renderLaporan(wadahFitur);
+        } else if (typeof renderLaporan === "function") {
+          renderLaporan(wadahFitur);
+        }
         break;
     }
   });
