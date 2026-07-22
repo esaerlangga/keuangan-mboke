@@ -419,23 +419,47 @@ window.renderTabungan = function (target) {
   `;
 };
 
-// ==================================================
-// 🗑️ HAPUS TRANSAKSI
+//// ==================================================
+// 🗑️ HAPUS TRANSAKSI (DENGAN SWEETALERT2 MODERN)
 // ==================================================
 window.hapusTransaksi = function (idTransaksi) {
-  let konfirmasi = confirm("Apakah Anda yakin ingin menghapus transaksi ini?");
-  if (konfirmasi) {
-    let semuaData = ambilSemuaTransaksi();
-    let dataBaru = semuaData.filter(
-      (transaksi) => transaksi.id !== idTransaksi,
-    );
-    simpanSemuaTransaksi(dataBaru);
+  Swal.fire({
+    title: "Hapus Transaksi Ini?",
+    text: "Data yang dihapus tidak dapat dikembalikan!",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#ef4444",
+    cancelButtonColor: "#64748b",
+    confirmButtonText: "Ya, Hapus!",
+    cancelButtonText: "Batal",
+    reverseButtons: true,
+    customClass: {
+      popup: "rounded-2xl shadow-xl",
+      confirmButton: "px-5 py-2.5 rounded-xl font-medium text-white",
+      cancelButton: "px-5 py-2.5 rounded-xl font-medium text-white",
+    },
+  }).then((result) => {
+    if (result.isConfirmed) {
+      let semuaData = ambilSemuaTransaksi();
+      let dataBaru = semuaData.filter(
+        (transaksi) => transaksi.id !== idTransaksi,
+      );
+      simpanSemuaTransaksi(dataBaru);
 
-    if (typeof tampilkanNotifikasi === "function") {
-      tampilkanNotifikasi("berhasil", "✅ Data transaksi berhasil dihapus!");
+      Swal.fire({
+        title: "Terhapus!",
+        text: "Data transaksi berhasil dihapus.",
+        icon: "success",
+        timer: 1500,
+        showConfirmButton: false,
+        customClass: {
+          popup: "rounded-2xl shadow-xl",
+        },
+      });
+
+      if (typeof renderDashboardKeuangan === "function") {
+        renderDashboardKeuangan();
+      }
     }
-    if (typeof renderDashboardKeuangan === "function") {
-      renderDashboardKeuangan();
-    }
-  }
+  });
 };
