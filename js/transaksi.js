@@ -22,6 +22,8 @@ const KATEGORI = {
   keluar: [
     { id: "belanja_pasar", label: "🥬 Belanja Pasar" },
     { id: "bayar_suplayer", label: "📦 Bayar Suplayer" },
+    { id: "talangan_owner", label: "👑 Belanja Ditalangi Bu Dewi" },
+    { id: "bayar_owner", label: "💸 Bayar ke Bu Dewi" },
     { id: "qris_keluar", label: "💳 Pengeluaran QRIS" },
     { id: "ops_riil", label: "⚠️ OPS RIIL (Biaya Tak Terduga)" },
     { id: "makan_karyawan", label: "🍱 Uang Makan Karyawan" },
@@ -225,7 +227,8 @@ function renderLaporan(target, bulanDipilih = null) {
       Number(item.opsRiil || 0) +
       Number(item.qrisKeluar || 0) +
       Number(item.tabunganWajib || 0) +
-      Number(item.kasbon || 0);
+      Number(item.kasbon || 0) +
+      Number(item.ditalangiOwner || 0);
     totalPengeluaran += pengeluaranHariIni;
     totalLabaBersih += Number(item.labaBersih || 0);
   });

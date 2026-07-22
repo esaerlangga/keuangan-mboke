@@ -48,7 +48,7 @@ window.prompt = function (judul, petunjuk = "") {
 };
 
 // ==============================================
-// FUNGSI UTAMA HITUNG DASHBOARD & RENDER KEDUA TABEL
+// FUNGSI UTAMA HITUNG DASHBOARD & RENDER SEMUA TABEL
 // ==============================================
 function muatDashboardUtama() {
   const dataLaporan = JSON.parse(localStorage.getItem("laporanHarian") || "[]");
@@ -61,11 +61,21 @@ function muatDashboardUtama() {
   let totalLabaKotor = 0;
   let totalLabaBersih = 0;
 
+  // Akumulasi Rumus Bu Dewi
+  let totalDitalangiBuDewi = 0;
+  let totalSudahDibayarBuDewi = 0;
+
   dataLaporan.forEach((item) => {
     totalOmset += Number(item.omset || 0);
     totalLabaKotor += Number(item.labaKotor || 0);
     totalLabaBersih += Number(item.labaBersih || 0);
+
+    totalDitalangiBuDewi += Number(item.ditalangiOwner || 0);
+    totalSudahDibayarBuDewi += Number(item.bayarOwner || 0);
   });
+
+  // Hitung Sisa Kekurangan Pembayaran ke Bu Dewi
+  let sisaKekuranganBuDewi = totalDitalangiBuDewi - totalSudahDibayarBuDewi;
 
   // Tampilkan Nilai Ringkasan ke Kartu Dashboard
   const elOmset = document.getElementById("nilai-omset");
@@ -78,12 +88,12 @@ function muatDashboardUtama() {
   if (elLabaBersih)
     elLabaBersih.innerText = `Rp ${totalLabaBersih.toLocaleString("id-ID")}`;
 
-  // 2. Beri jeda singkat agar DOM siap, lalu isi KEDUA TABEL
+  // 2. Beri jeda singkat agar DOM siap, lalu render semua tabel
   setTimeout(() => {
     const tbodyLaporan = document.getElementById("isi-tabel-laporan");
     const elWaktu = document.getElementById("waktu-perbarui");
 
-    // A. ISI TABEL 1: LAPORAN HARIAN
+    // A. TABEL 1: LAPORAN HARIAN
     if (tbodyLaporan) {
       if (dataLaporan.length === 0) {
         tbodyLaporan.innerHTML = `<tr><td colspan="15" class="tabel-kosong">Belum ada data laporan harian. Silakan input transaksi baru.</td></tr>`;
@@ -116,9 +126,105 @@ function muatDashboardUtama() {
       }
     }
 
-    // B. BUAT ATAU TAMPILKAN TABEL 2: DETAIL RIWAYAT TRANSAKSI SATUAN
-    const wadahTabel = document.getElementById("wadah-tabel-transaksi");
-    if (wadahTabel && !document.getElementById("wadah-tabel-riwayat-satuan")) {
+    // B. BUAT WADAH & TABEL KHUSUS BU DEWI (KEKURANGAN & PEMBAYARAN)
+    const wadahTabelUtama = document.getElementById("wadah-tabel-transaksi");
+    if (
+      wadahTabelUtama &&
+      !document.getElementById("wadah-tanggungan-budewi")
+    ) {
+      const elBuDewi = document.createElement("div");
+      elBuDewi.id = "wadah-tanggungan-budewi";
+      elBuDewi.style.marginTop = "30px";
+      elBuDewi.style.padding = "20px";
+      elBuDewi.style.background = "#fff8e6";
+      elBuDewi.style.border = "1px solid #ffd699";
+      elBuDewi.style.borderRadius = "14px";
+
+      elBuDewi.innerHTML = `
+        <h3 style="color: #92400e; margin-bottom: 15px;">👑 Rekapitulasi Pembayaran & Kekurangan ke Bu Dewi</h3>
+        
+        <!-- TABEL 1: KEKURANGAN PEMBAYARAN KE BU DEWI -->
+        <div class="tabel-responsif" style="margin-bottom: 20px;">
+          <table class="tabel-transaksi">
+            <thead>
+              <tr style="background: #fef3c7;">
+                <th>Status Kategori</th>
+                <th class="rata-kanan">Total Belanja Ditalangi Bu Dewi</th>
+                <th class="rata-kanan">Total Sudah Dibayarkan</th>
+                <th class="rata-kanan" style="color: #b45309;">SISA KEKURANGAN PEMBAYARAN</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Tanggungan Restoran</strong></td>
+                <td class="rata-kanan">Rp <span id="val-ditalangi">0</span></td>
+                <td class="rata-kanan" style="color: #16a34a;">Rp <span id="val-dibayar">0</span></td>
+                <td class="rata-kanan" style="font-weight: bold; color: #dc2626; font-size: 16px;">Rp <span id="val-kekurangan">0</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- TABEL 2: RIWAYAT PEMBAYARAN KE BU DEWI -->
+        <h4 style="color: #92400e; margin: 15px 0 10px 0;">📜 Riwayat Pembayaran ke Bu Dewi</h4>
+        <div class="tabel-responsif">
+          <table class="tabel-transaksi">
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>Tanggal Pembayaran</th>
+                <th class="rata-kanan">Jumlah Dibayarkan</th>
+                <th>Keterangan</th>
+              </tr>
+            </thead>
+            <tbody id="isi-tabel-bayar-budewi"></tbody>
+          </table>
+        </div>
+      `;
+      wadahTabelUtama.appendChild(elBuDewi);
+    }
+
+    // UPDATE NILAI TABEL KEKURANGAN BU DEWI
+    const elDitalangi = document.getElementById("val-ditalangi");
+    const elDibayar = document.getElementById("val-dibayar");
+    const elKekurangan = document.getElementById("val-kekurangan");
+
+    if (elDitalangi)
+      elDitalangi.innerText = totalDitalangiBuDewi.toLocaleString("id-ID");
+    if (elDibayar)
+      elDibayar.innerText = totalSudahDibayarBuDewi.toLocaleString("id-ID");
+    if (elKekurangan)
+      elKekurangan.innerText = Math.max(0, sisaKekuranganBuDewi).toLocaleString(
+        "id-ID",
+      );
+
+    // ISI TABEL RIWAYAT PEMBAYARAN KE BU DEWI
+    const tbodyBayarBuDewi = document.getElementById("isi-tabel-bayar-budewi");
+    if (tbodyBayarBuDewi) {
+      const dataBayar = dataRiwayat.filter((t) => t.kategori === "bayar_owner");
+      if (dataBayar.length === 0) {
+        tbodyBayarBuDewi.innerHTML = `<tr><td colspan="4" class="tabel-kosong">Belum ada riwayat pembayaran ke Bu Dewi.</td></tr>`;
+      } else {
+        tbodyBayarBuDewi.innerHTML = dataBayar
+          .map(
+            (t, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${t.tanggal}</td>
+              <td class="rata-kanan" style="font-weight:bold; color:#16a34a;">Rp ${(t.jumlah || 0).toLocaleString("id-ID")}</td>
+              <td>${t.keterangan || "Pembayaran ke Bu Dewi"}</td>
+            </tr>
+          `,
+          )
+          .join("");
+      }
+    }
+
+    // C. TABEL DETAIL TRANSAKSI SATUAN
+    if (
+      wadahTabelUtama &&
+      !document.getElementById("wadah-tabel-riwayat-satuan")
+    ) {
       const elemenRiwayat = document.createElement("div");
       elemenRiwayat.id = "wadah-tabel-riwayat-satuan";
       elemenRiwayat.style.marginTop = "35px";
@@ -144,10 +250,9 @@ function muatDashboardUtama() {
           </table>
         </div>
       `;
-      wadahTabel.appendChild(elemenRiwayat);
+      wadahTabelUtama.appendChild(elemenRiwayat);
     }
 
-    // C. ISI TABEL RIWAYAT TRANSAKSI SATUAN
     const tbodyRiwayat = document.getElementById("isi-tabel-riwayat");
     if (tbodyRiwayat) {
       if (dataRiwayat.length === 0) {
@@ -194,9 +299,6 @@ document.addEventListener("DOMContentLoaded", function () {
     localStorage.setItem("laporanHarian", JSON.stringify([]));
   }
 
-  // ==============================================
-  // FUNGSI NOTIFIKASI & KONFIRMASI
-  // ==============================================
   function tampilkanNotifikasi(jenis, pesan, durasi = 3400) {
     const wadah = document.getElementById("wadah-notifikasi");
     if (!wadah) return;
@@ -255,9 +357,6 @@ document.addEventListener("DOMContentLoaded", function () {
     };
   }
 
-  // ==============================================
-  // TOMBOL PILIH ROLE & LOGIN
-  // ==============================================
   document.addEventListener("click", (e) => {
     const tombolRole = e.target.closest(".tombol-role");
     if (tombolRole) {
@@ -328,7 +427,6 @@ document.addEventListener("DOMContentLoaded", function () {
     if (e.key === "Enter") tombolMasuk.click();
   });
 
-  // LOGOUT
   document.addEventListener("click", (e) => {
     if (e.target.closest("#tombol-keluar")) {
       tampilkanKonfirmasi(
@@ -343,9 +441,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // ==============================================
-  // NAVIGASI MENU (KEDUA ROLE PUNYA AKSES PENUH)
-  // ==============================================
   document.addEventListener("click", (e) => {
     const tombol = e.target.closest(".tombol-menu");
     if (!tombol) return;
@@ -425,7 +520,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  // CEK SESI SAAT HALAMAN DIBUKA
   const roleTersimpan = localStorage.getItem("roleAktif");
   if (roleTersimpan) {
     roleYangDipilih = roleTersimpan;
@@ -455,9 +549,6 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 });
 
-// ==============================================
-// SERVICE WORKER
-// ==============================================
 if ("serviceWorker" in navigator) {
   window.addEventListener("load", () => {
     navigator.serviceWorker
