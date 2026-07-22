@@ -21,13 +21,12 @@ const KATEGORI = {
   ],
   keluar: [
     { id: "belanja_pasar", label: "🥬 Belanja Pasar" },
-    { id: "bayar_suplayer", label: "📦 Bayar Suplayer" },
-    { id: "talangan_owner", label: "👑 Belanja Ditalangi Bu Dewi" },
-    { id: "bayar_owner", label: "💸 Bayar ke Bu Dewi" },
-    { id: "qris_keluar", label: "💳 Pengeluaran QRIS" },
     { id: "ops_riil", label: "⚠️ OPS RIIL (Biaya Tak Terduga)" },
+    { id: "qris_keluar", label: "💳 Pengeluaran QRIS" },
     { id: "makan_karyawan", label: "🍱 Uang Makan Karyawan" },
     { id: "kasbon", label: "💸 Kasbon Karyawan" },
+    { id: "talangan_owner", label: "👑 Belanja Ditalangi Bu Dewi" },
+    { id: "bayar_owner", label: "💸 Bayar ke Bu Dewi" },
   ],
 };
 
