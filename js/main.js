@@ -512,6 +512,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+  // NAVIGASI MENU UTAMA (DIPERBAIKI AGAR KONTEN PER MENU TAMPIL SEMPURNA)
   document.addEventListener("click", (e) => {
     const tombol = e.target.closest(".tombol-menu");
     if (!tombol) return;
@@ -526,10 +527,19 @@ document.addEventListener("DOMContentLoaded", function () {
     const pesan = document.getElementById("pesan-user");
     const elRingkasan = document.getElementById("ringkasan-keuangan");
     const elWadahTabel = document.getElementById("wadah-tabel-transaksi");
-    document.getElementById("wadah-form-transaksi")?.remove();
+
+    // Hapus wadah konten fitur lama jika ada
+    document.getElementById("wadah-konten-fitur")?.remove();
 
     if (elRingkasan) elRingkasan.style.display = "none";
     if (elWadahTabel) elWadahTabel.style.display = "none";
+
+    // Siapkan wadah konten baru
+    const wadahKontenUtama =
+      document.querySelector(".bungkus-konten") ||
+      document.getElementById("konten-utama");
+    const wadahFitur = document.createElement("div");
+    wadahFitur.id = "wadah-konten-fitur";
 
     switch (menu) {
       case "dashboard":
@@ -555,25 +565,17 @@ document.addEventListener("DOMContentLoaded", function () {
           pesan.textContent =
             "Jangan lupa catat semua transaksi harian agar laporan keuangan akurat.";
 
-        const wadahFormTransaksi = Object.assign(
-          document.createElement("div"),
-          { id: "wadah-form-transaksi" },
-        );
-        pesan.parentNode.appendChild(wadahFormTransaksi);
+        wadahKontenUtama.appendChild(wadahFitur);
         if (typeof renderFormTransaksi === "function")
-          renderFormTransaksi(wadahFormTransaksi);
+          renderFormTransaksi(wadahFitur);
         break;
 
       case "tabungan":
         if (sapaan) sapaan.textContent = "🏦 Pengelolaan Tabungan";
         if (pesan) pesan.textContent = "Sisihkan uang ke pos wajib.";
 
-        const wadahFormTabungan = Object.assign(document.createElement("div"), {
-          id: "wadah-form-transaksi",
-        });
-        pesan.parentNode.appendChild(wadahFormTabungan);
-        if (typeof renderTabungan === "function")
-          renderTabungan(wadahFormTabungan);
+        wadahKontenUtama.appendChild(wadahFitur);
+        if (typeof renderTabungan === "function") renderTabungan(wadahFitur);
         break;
 
       case "laporan":
@@ -581,12 +583,8 @@ document.addEventListener("DOMContentLoaded", function () {
         if (pesan)
           pesan.textContent = "Rekap data harian jadi laporan siap cetak.";
 
-        const wadahFormLaporan = Object.assign(document.createElement("div"), {
-          id: "wadah-form-transaksi",
-        });
-        pesan.parentNode.appendChild(wadahFormLaporan);
-        if (typeof renderLaporan === "function")
-          renderLaporan(wadahFormLaporan);
+        wadahKontenUtama.appendChild(wadahFitur);
+        if (typeof renderLaporan === "function") renderLaporan(wadahFitur);
         break;
     }
   });
