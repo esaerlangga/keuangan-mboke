@@ -704,3 +704,22 @@ body.logged-in #halaman-login {
     width: 100%;
   }
 }
+/* ==================================================
+   PENGAMAN MUTLAK KOTAK PROMPT KUSTOM
+   ================================================== */
+#wadah-input-kustom,
+.wadah-input-kustom {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hanya muncul jika memiliki class .tampil DAN dipanggil script */
+#wadah-input-kustom.tampil,
+.wadah-input-kustom.tampil {
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}

@@ -1,46 +1,47 @@
 // ==============================================
-// PENGGANTI PROMPT KUSTOM
+// PENGGANTI PROMPT KUSTOM (AMARAH & ANTI-AUTO POPUP)
 // ==============================================
 window.prompt = function (judul, petunjuk = "") {
-  if (!document.getElementById("wadah-input-kustom")) {
-    const wadah = document.createElement("div");
-    wadah.id = "wadah-input-kustom";
-    wadah.className = "wadah-input-kustom";
-    wadah.innerHTML = `
-      <div class="kotak-input-kustom">
-        <h4 id="judul-input"></h4>
-        <p id="petunjuk-input"></p>
-        <input type="text" id="nilai-input" placeholder="Contoh: 750000" inputmode="numeric">
-        <div class="tombol-input">
-          <button type="button" id="btn-batal-input" class="btn-batal">Batal</button>
-          <button type="button" id="btn-ok-input" class="btn-ya">OK</button>
-        </div>
+  // Hapus wadah lama jika masih ada tertinggal
+  const wadahLama = document.getElementById("wadah-input-kustom");
+  if (wadahLama) wadahLama.remove();
+
+  const wadah = document.createElement("div");
+  wadah.id = "wadah-input-kustom";
+  wadah.className = "wadah-input-kustom";
+  wadah.innerHTML = `
+    <div class="kotak-input-kustom">
+      <h4 id="judul-input">${judul || "Input Data"}</h4>
+      <p id="petunjuk-input">${petunjuk || "Masukkan nominal di bawah ini:"}</p>
+      <input type="text" id="nilai-input" placeholder="Contoh: 750000" inputmode="numeric">
+      <div class="tombol-input">
+        <button type="button" id="btn-batal-input" class="btn-batal">Batal</button>
+        <button type="button" id="btn-ok-input" class="btn-ya">OK</button>
       </div>
-    `;
-    document.body.appendChild(wadah);
-  }
+    </div>
+  `;
+  document.body.appendChild(wadah);
 
-  const wadah = document.getElementById("wadah-input-kustom");
-  const elJudul = document.getElementById("judul-input");
-  const elPetunjuk = document.getElementById("petunjuk-input");
   const input = document.getElementById("nilai-input");
-
-  if (elJudul) elJudul.textContent = judul || "Input Data";
-  if (elPetunjuk)
-    elPetunjuk.textContent = petunjuk || "Masukkan nominal di bawah ini:";
-
   input.value = "";
-  wadah.classList.add("tampil");
-  setTimeout(() => input.focus(), 50);
+
+  // Berikan jeda mikroskopis sebelum menambahkan class tampil
+  requestAnimationFrame(() => {
+    wadah.classList.add("tampil");
+    input.focus();
+  });
 
   return new Promise((resolve) => {
     const tutup = () => {
       wadah.classList.remove("tampil");
+      setTimeout(() => wadah.remove(), 150);
       resolve(null);
     };
     const ok = () => {
+      const val = input.value.trim();
       wadah.classList.remove("tampil");
-      resolve(input.value.trim());
+      setTimeout(() => wadah.remove(), 150);
+      resolve(val);
     };
 
     document.getElementById("btn-batal-input").onclick = tutup;
