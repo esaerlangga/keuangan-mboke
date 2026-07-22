@@ -13,21 +13,16 @@
     />
     <meta name="apple-mobile-web-app-title" content="Keuangan Mbok'e" />
     <link rel="stylesheet" href="css/style.css" />
-    <script src="js/main.js?v=10" defer></script>
-    <script src="js/transaksi.js?v=10" defer></script>
+    <script src="js/main.js?v=11" defer></script>
+    <script src="js/transaksi.js?v=11" defer></script>
   </head>
   <body>
-    <!-- ==============================================
-         WADAH NOTIFIKASI
-         ============================================== -->
+    <!-- WADAH NOTIFIKASI -->
     <div id="wadah-notifikasi"></div>
 
-    <!-- ==============================================
-         HALAMAN LOGIN
-         ============================================== -->
+    <!-- HALAMAN LOGIN -->
     <div id="halaman-login">
       <div class="kotak-login">
-        <!-- WADAH LOGO RESTORAN -->
         <div class="wadah-logo">
           <img
             src="assets/images/logo-mboke.png.png"
@@ -93,16 +88,12 @@
         </button>
       </div>
     </div>
-    <!-- AKHIR HALAMAN LOGIN -->
 
-    <!-- ==============================================
-         HALAMAN UTAMA
-         ============================================== -->
+    <!-- HALAMAN UTAMA -->
     <div id="halaman-utama" style="display: none">
       <!-- HEADER -->
       <header id="header-utama">
         <div class="bungkus-header">
-          <!-- BAGIAN KIRI: LOGO & JUDUL -->
           <div class="kiri-header">
             <img
               src="assets/images/logo-mboke.png.png"
@@ -126,16 +117,16 @@
         </div>
       </header>
 
-      <!-- MENU NAVIGASI -->
+      <!-- MENU NAVIGASI (HAK AKSES PENUH UNTUK SEMUA ROLE) -->
       <nav class="bungkus-menu">
         <div id="menu-utama">
           <button class="tombol-menu" data-menu="dashboard">
             🏠 Dashboard
           </button>
-          <button class="tombol-menu khusus-manajer" data-menu="transaksi">
+          <button class="tombol-menu" data-menu="transaksi">
             ➕ Input Transaksi
           </button>
-          <button class="tombol-menu khusus-manajer" data-menu="tabungan">
+          <button class="tombol-menu" data-menu="tabungan">
             🏦 Pengelolaan Tabungan
           </button>
           <button class="tombol-menu" data-menu="laporan">
@@ -210,11 +201,8 @@
         </div>
       </main>
     </div>
-    <!-- AKHIR HALAMAN UTAMA -->
 
-    <!-- ==============================================
-         KOTAK INPUT KUSTOM
-         ============================================== -->
+    <!-- KOTAK INPUT KUSTOM -->
     <div id="wadah-input-kustom" class="wadah-input-kustom">
       <div class="kotak-input-kustom">
         <h4 id="judul-input"></h4>

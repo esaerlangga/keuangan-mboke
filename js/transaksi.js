@@ -46,7 +46,7 @@ function formatRupiah(n) {
 }
 
 // ==================================================
-// 📝 FORM INPUT TRANSAKSI
+// 📝 FORM INPUT TRANSAKSI (MURNI MANUAL)
 // ==================================================
 function renderFormTransaksi(target) {
   if (!target) return;
@@ -158,6 +158,10 @@ function renderFormTransaksi(target) {
     inpTgl.value = new Date().toISOString().split("T")[0];
     isiKategori();
     aturKeterangan();
+
+    if (typeof muatDashboardUtama === "function") {
+      muatDashboardUtama();
+    }
   });
 }
 
@@ -171,19 +175,17 @@ function renderDashboardKeuangan() {
 }
 
 // ==================================================
-// 📊 LAPORAN BULANAN (OTOMATIS BERDASARKAN DATA ADA)
+// 📊 LAPORAN BULANAN (BERDASARKAN DATA MANUAL)
 // ==================================================
 function renderLaporan(target, bulanDipilih = null) {
   if (!target) return;
 
   const dataLaporan = JSON.parse(localStorage.getItem("laporanHarian") || "[]");
 
-  // 1. Secara otomatis ambil HANYA bulan & tahun yang datanya sudah ada
   const daftarBulan = [
     ...new Set(dataLaporan.map((item) => (item.tanggal || "").slice(0, 7))),
   ].filter(Boolean);
 
-  // Jika belum ada bulan yang dipilih, pilih bulan paling baru dari data
   if (!bulanDipilih) {
     bulanDipilih =
       daftarBulan.length > 0
@@ -191,12 +193,10 @@ function renderLaporan(target, bulanDipilih = null) {
         : new Date().toISOString().slice(0, 7);
   }
 
-  // 2. Filter data transaksi khusus bulan yang sedang dipilih
   const dataBulanIni = dataLaporan.filter((item) =>
     (item.tanggal || "").startsWith(bulanDipilih),
   );
 
-  // Format Nama Bulan & Tahun (Contoh: "2026-07" -> "Juli 2026")
   const [tahun, bulanNum] = bulanDipilih.split("-");
   const namaBulanMap = {
     "01": "Januari",
@@ -214,7 +214,6 @@ function renderLaporan(target, bulanDipilih = null) {
   };
   const teksBulanTahun = `${namaBulanMap[bulanNum] || "Bulan"} ${tahun}`;
 
-  // 3. Hitung Keuangan Bulan Terpilih
   let totalPendapatan = 0;
   let totalPengeluaran = 0;
   let totalLabaBersih = 0;
@@ -237,19 +236,20 @@ function renderLaporan(target, bulanDipilih = null) {
   const totalHakManajer = gajiPokokManajer + bagiHasilManajer;
   const hakPemilik = Math.max(0, totalLabaBersih - bagiHasilManajer);
 
-  // 4. Render Tampilan
   target.innerHTML = `
     <section class="kartu-form" style="margin-top:20px; border-radius:16px;">
       
-      <!-- TOMBOL KAPSUL PILIHAN BULAN (AUTOMATIC GENERATED) -->
       <div style="background:#f1f5f9; padding:8px 12px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; gap:8px; overflow-x:auto;">
         <span style="font-size:13px; font-weight:700; color:#64748b; padding-right:6px; white-space:nowrap;">📅 Periode:</span>
         <div style="display:flex; gap:8px;">
-          ${daftarBulan
-            .map((b) => {
-              const [t, m] = b.split("-");
-              const isAktif = b === bulanDipilih;
-              return `
+          ${
+            daftarBulan.length === 0
+              ? '<span style="font-size:13px; color:#64748b;">Belum ada data periode.</span>'
+              : daftarBulan
+                  .map((b) => {
+                    const [t, m] = b.split("-");
+                    const isAktif = b === bulanDipilih;
+                    return `
                 <button 
                   type="button" 
                   class="btn-pilih-bulan" 
@@ -273,8 +273,9 @@ function renderLaporan(target, bulanDipilih = null) {
                   ${namaBulanMap[m] || m} ${t}
                 </button>
               `;
-            })
-            .join("")}
+                  })
+                  .join("")
+          }
         </div>
       </div>
 
@@ -321,7 +322,6 @@ function renderLaporan(target, bulanDipilih = null) {
     </section>
   `;
 
-  // Event listener tombol pemicu ganti bulan
   target.querySelectorAll(".btn-pilih-bulan").forEach((btn) => {
     btn.addEventListener("click", () => {
       renderLaporan(target, btn.dataset.bulan);
@@ -330,7 +330,7 @@ function renderLaporan(target, bulanDipilih = null) {
 }
 
 // ==================================================
-// 🏦 RINCIAN LENGKAP 8 POS TABUNGAN (DARI SHEET 2 EXCEL)
+// 🏦 RINCIAN POS TABUNGAN
 // ==================================================
 function renderTabungan(target) {
   if (!target) return;
@@ -340,7 +340,6 @@ function renderTabungan(target) {
 
   const totalTabungan = 495000 * jumlahHari;
 
-  // Rasio harian dari Sheet 2
   const posGaji = 325000 * jumlahHari;
   const posSewa = 80000 * jumlahHari;
   const posListrik = 35000 * jumlahHari;
