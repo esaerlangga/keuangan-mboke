@@ -81,7 +81,7 @@ window.renderFormTransaksi = function (target) {
         </div>
         <div class="field full">
           <label for="jumlah">Jumlah (Rp) *</label>
-          <input type="number" id="jumlah" name="jumlah" min="1" step="1" placeholder="Contoh: 1250000" required>
+          <input type="number" id="jumlah" name="jumlah" min="0" step="1" placeholder="Contoh: 1250000" required>
         </div>
         <div class="field full field-keterangan">
           <label for="ket">Keterangan <span class="wajib-keluar">*</span></label>
