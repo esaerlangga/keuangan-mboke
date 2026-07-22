@@ -116,30 +116,23 @@ window.renderFormTransaksi = function (target) {
     const j = form.querySelector('input[name="jenis"]:checked').value;
     const kat = selectKat.value;
 
-    if (j === "masuk") {
+    // SEMBUNYIKAN KOLOM JIKA UANG MASUK ATAU UANG MAKAN KARYAWAN
+    if (j === "masuk" || kat === "makan_karyawan") {
       fieldKet.style.display = "none";
       inpKet.removeAttribute("required");
       if (labelWajib) labelWajib.style.display = "none";
     } else {
       fieldKet.style.display = "";
-      // UANG MAKAN KARYAWAN -> TIDAK WAJIB ISI KETERANGAN
-      if (kat === "makan_karyawan") {
-        inpKet.removeAttribute("required");
-        if (labelWajib) labelWajib.style.display = "none";
-      } else {
-        // KATEGORI KELUAR LAINNYA -> WAJIB ISI KETERANGAN
-        inpKet.setAttribute("required", "required");
-        if (labelWajib) labelWajib.style.display = "";
-      }
+      inpKet.setAttribute("required", "required");
+      if (labelWajib) labelWajib.style.display = "";
     }
   }
 
   isiKategori();
   aturKeterangan();
 
-  // Listener perubahan kategori agar status wajib/opsional langsung responsif
+  // Listener agar perubahan jenis/kategori langsung memperbarui tampilan kolom keterangan
   selectKat.addEventListener("change", aturKeterangan);
-
   radioJenis.forEach((r) =>
     r.addEventListener("change", () => {
       isiKategori();
@@ -152,7 +145,7 @@ window.renderFormTransaksi = function (target) {
     const kat = selectKat.value;
     let teksKeterangan = inpKet.value.trim();
 
-    // Otomatis isi keterangan default jika Uang Makan Karyawan dikosongkan
+    // Otomatis buat keterangan default untuk Uang Makan Karyawan
     if (kat === "makan_karyawan" && !teksKeterangan) {
       teksKeterangan = "Uang Makan Karyawan";
     }
