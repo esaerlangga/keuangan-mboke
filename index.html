@@ -12,12 +12,22 @@
       content="black-translucent"
     />
     <meta name="apple-mobile-web-app-title" content="Keuangan Mbok'e" />
-    <!-- Naikkan versi agar termuat ulang dengan sempurna -->
-    <link rel="stylesheet" href="css/style.css?v=33" />
-    <script src="js/main.js?v=33" defer></script>
-    <script src="js/transaksi.js?v=33" defer></script>
-    <!-- SweetAlert2 untuk Notifikasi & Konfirmasi Modern -->
+    <link rel="stylesheet" href="css/style.css?v=34" />
+
+    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Flatpickr Datepicker Modern -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
+
+    <!-- SCRIPT UTAMA (PENTING: Tambahkan type="module" di main.js) -->
+    <script src="js/transaksi.js?v=34"></script>
+    <script type="module" src="js/main.js?v=34"></script>
   </head>
   <body>
     <!-- WADAH NOTIFIKASI -->
@@ -120,7 +130,7 @@
         </div>
       </header>
 
-      <!-- MENU NAVIGASI (HAK AKSES PENUH UNTUK SEMUA ROLE) -->
+      <!-- MENU NAVIGASI -->
       <nav class="bungkus-menu">
         <div id="menu-utama">
           <button class="tombol-menu" data-menu="dashboard">
@@ -146,6 +156,9 @@
             <p id="pesan-user">Anda berhasil masuk ke sistem.</p>
           </section>
 
+          <!-- WADAH KONTEN FITUR TAB -->
+          <div id="wadah-konten-fitur" style="display: none"></div>
+
           <!-- RINGKASAN KEUANGAN -->
           <div id="ringkasan-keuangan" class="grid-ringkasan-lengkap">
             <div class="kartu-ringkasan kartu-omset">
@@ -161,6 +174,9 @@
               <div class="nilai-ringkasan" id="nilai-lababersih">Rp 0</div>
             </div>
           </div>
+
+          <!-- WADAH ANTREAN TRANSAKSI -->
+          <div id="area-draft-kasir"></div>
 
           <!-- TABEL LAPORAN HARIAN -->
           <div
@@ -201,6 +217,9 @@
               Terakhir diperbarui: <span id="waktu-perbarui">—</span>
             </div>
           </div>
+
+          <!-- 👑 WADAH TABEL KHUSUS BU DEWI -->
+          <div id="wadah-tabel-bu-dewi" style="margin-top: 24px"></div>
         </div>
       </main>
     </div>

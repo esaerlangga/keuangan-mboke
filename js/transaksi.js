@@ -1,367 +1,307 @@
-// ==================================================
-// FITUR TRANSAKSI, TABUNGAN & LAPORAN - SINKRON EXCEL
-// ==================================================
-const URL_API =
-  "https://script.google.com/macros/s/AKfycbwgdScsIBTMQ5Aw3hsCgeDSWOwV-b1ySVB46h8uHQjeCkMdcCya_pwoPwEtvja3y1BJpQ/exec";
+// ==============================================
+// MODUL TRANSAKSI (SISTEM KEUANGAN MBOK'E)
+// ==============================================
 
-function simpanTransaksiKeServer(dataTransaksi) {
-  fetch(URL_API, {
-    method: "POST",
-    mode: "no-cors",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dataTransaksi),
-  }).catch((err) => console.error("Gagal menyimpan:", err));
-}
+/**
+ * Fungsi untuk merender Form Input Transaksi Harian
+ * @param {HTMLElement} container - Wadah tempat form ditayangkan
+ */
+window.renderFormTransaksi = function (container) {
+  if (!container) return;
 
-const KATEGORI = {
-  masuk: [
-    { id: "tunai", label: "💰 Tunai" },
-    { id: "qris_masuk", label: "📱 QRIS" },
-    { id: "transfer", label: "🏦 Transfer Bank" },
-  ],
-  keluar: [
-    { id: "belanja_pasar", label: "🥬 Belanja Pasar" },
-    { id: "ops_riil", label: "⚠️ OPS RIIL (Biaya Tak Terduga)" },
-    { id: "qris_keluar", label: "💳 Pengeluaran QRIS" },
-    { id: "makan_karyawan", label: "🍱 Uang Makan Karyawan" },
-    { id: "kasbon", label: "💸 Kasbon Karyawan" },
-    { id: "talangan_owner", label: "👑 Belanja Ditalangi Bu Dewi" },
-    { id: "bayar_owner", label: "💸 Bayar ke Bu Dewi" },
-  ],
-};
+  const hariIni = new Date().toISOString().split("T")[0];
 
-const STORAGE_KEY = "data_transaksi_sambel_tempong";
+  const dataKategori = {
+    masuk: [
+      {
+        id: "tunai",
+        label: "Tunai / Cash",
+        icon: "💵",
+        deskripsi: "Penjualan Cash Harian",
+      },
+      {
+        id: "qris_masuk",
+        label: "QRIS Masuk",
+        icon: "📱",
+        deskripsi: "Pembayaran QRIS Pelanggan",
+      },
+      {
+        id: "transfer",
+        label: "Transfer Bank",
+        icon: "🏦",
+        deskripsi: "Pemasukan via Bank Transfer",
+      },
+    ],
+    keluar: [
+      {
+        id: "belanja_pasar",
+        label: "Belanja Pasar",
+        icon: "🛒",
+        deskripsi: "Bahan baku, ayam, bumbu, sayur",
+      },
+      {
+        id: "ops_riil",
+        label: "Operasional Riil",
+        icon: "⚙️",
+        deskripsi: "Biaya rutin operasional",
+      },
+      {
+        id: "makan_karyawan",
+        label: "Uang Makan Karyawan",
+        icon: "🍱",
+        deskripsi: "Jatah makan staf / karyawan",
+      },
+      {
+        id: "qris_keluar",
+        label: "QRIS Keluar",
+        icon: "💸",
+        deskripsi: "Pengeluaran non-tunai / QRIS",
+      },
+      {
+        id: "kasbon",
+        label: "Kasbon Karyawan",
+        icon: "🤝",
+        deskripsi: "Pinjaman uang karyawan",
+      },
+    ],
+    budewi: [
+      {
+        id: "talangan_owner",
+        label: "Ditalangi Bu Dewi (Owner)",
+        icon: "👑",
+        deskripsi: "Tambah Utang (Restoran ditalangi Bu Dewi)",
+      },
+      {
+        id: "bayar_owner",
+        label: "Bayar Hutang ke Bu Dewi",
+        icon: "💰",
+        deskripsi: "Kurang Utang (Restoran bayar ke Bu Dewi)",
+      },
+    ],
+  };
 
-function ambilSemuaTransaksi() {
-  const d = localStorage.getItem(STORAGE_KEY);
-  return d ? JSON.parse(d) : [];
-}
+  let jenisAktif = "masuk";
+  let kategoriAktif = "tunai";
 
-function simpanSemuaTransaksi(arr) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
+  // Determine user role ("manajer" or "owner")
+  const roleAktif = localStorage.getItem('roleAktif') || '';
 
-function formatRupiah(n) {
-  if (isNaN(n)) n = 0;
-  return "Rp " + new Intl.NumberFormat("id-ID").format(parseInt(n));
-}
+  // Build the tabs markup based on role
+  let tabsHtml = `
+    <button type="button" class="btn-jenis-tab aktif" data-jenis="masuk">
+      <span class="ikon-jenis">🟢</span>
+      <span class="label-jenis">Pemasukan</span>
+    </button>
+    <button type="button" class="btn-jenis-tab" data-jenis="keluar">
+      <span class="ikon-jenis">🔴</span>
+      <span class="label-jenis">Pengeluaran</span>
+    </button>`;
+  if (roleAktif === 'manajer') {
+    tabsHtml += `
+    <button type="button" class="btn-jenis-tab btn-budewi" data-jenis="budewi">
+      <span class="ikon-jenis">👑</span>
+      <span class="label-jenis">Transaksi Bu Dewi</span>
+    </button>`;
+  }
 
-// ==================================================
-// 📝 FORM INPUT TRANSAKSI
-// ==================================================
-window.renderFormTransaksi = function (target) {
-  if (!target) return;
-  target.innerHTML = `
-    <section class="kartu-form" style="margin-top:15px;">
-      <div class="judul-form">
-        <h3>➕ Input Transaksi Baru</h3>
-        <p>Catat setiap arus uang masuk & keluar secara rinci.</p>
+  container.innerHTML = `
+    <div class="kartu-form-modern">
+      <div class="header-form">
+        <h3>📝 Input Transaksi Harian</h3>
+        <p>Pilih jenis & kategori transaksi dengan menekan tombol pilihan visual di bawah.</p>
       </div>
-      <form id="form-transaksi" autocomplete="off" class="form-grid">
-        <div class="field full">
-          <label>Jenis Transaksi *</label>
-          <div class="pilih-jenis">
-            <label class="radio-card radio-masuk">
-              <input type="radio" name="jenis" value="masuk" checked>
-              <span class="teks-radio">🟢 UANG MASUK</span>
-            </label>
-            <label class="radio-card radio-keluar">
-              <input type="radio" name="jenis" value="keluar">
-              <span class="teks-radio">🔴 UANG KELUAR</span>
-            </label>
+
+      <form id="form-input-transaksi">
+        <!-- 1. TANGGAL TRANSAKSI (FLATPICKR MODERN) -->
+        <div class="grup-input">
+          <label class="label-input">📅 Tanggal Transaksi</label>
+          <input type="text" id="input-tanggal" class="input-modern" placeholder="Pilih tanggal..." value="${hariIni}" required>
+        </div>
+
+        <!-- 2. PILIHAN JENIS TRANSAKSI -->
+        <div class="grup-input">
+          <label class="label-input">🏷️ Jenis Transaksi</label>
+          <div class="grid-pilih-jenis" style="${roleAktif === 'manajer' ? '' : 'grid-template-columns: 1fr 1fr;'}">
+            ${tabsHtml}
           </div>
         </div>
-        <div class="field">
-          <label for="tgl">Tanggal *</label>
-          <input type="date" id="tgl" name="tanggal" required>
+
+        <!-- 3. PILIHAN KATEGORI TRANSAKSI (GRID KARTU DINAMIS) -->
+        <div class="grup-input">
+          <label class="label-input" id="label-kategori-dinamis">🟢 Kategori Pemasukan</label>
+          <div id="wadah-kategori-dinamis" class="grid-pilih-kategori"></div>
         </div>
-        <div class="field">
-          <label for="kategori">Kategori *</label>
-          <select id="kategori" name="kategori" required></select>
+
+        <!-- 4. NOMINAL TRANSAKSI -->
+        <div class="grup-input">
+          <label class="label-input">💰 Nominal (Rp)</label>
+          <input type="number" id="input-jumlah" class="input-modern" placeholder="Contoh: 150000" min="1" required>
         </div>
-        <div class="field full">
-          <label for="jumlah">Jumlah (Rp) *</label>
-          <input type="number" id="jumlah" name="jumlah" min="0" step="1" placeholder="Contoh: 1250000" required>
+
+        <!-- 5. KETERANGAN / CATATAN (DITAMPILKAN HANYA UNTUK PENGELUARAN) -->
+        <div class="grup-input" id="grup-keterangan" style="display: none;">
+          <label class="label-input">📝 Keterangan / Catatan</label>
+          <input type="text" id="input-keterangan" class="input-modern" placeholder="Contoh: Beli Ayam 5kg / Kasbon Budi">
         </div>
-        <div class="field full field-keterangan">
-          <label for="ket">Keterangan <span class="wajib-keluar">*</span></label>
-          <textarea id="ket" name="keterangan" rows="2" placeholder="Contoh: Beli daging sapi 4kg"></textarea>
-        </div>
-        <div class="field full tombol-area">
-          <button type="submit" class="tombol-simpan">💾 Simpan Transaksi</button>
-        </div>
+
+        <!-- TOMBOL SIMPAN -->
+        <button type="submit" id="btn-simpan-transaksi" class="btn-simpan-modern">
+          💾 Simpan Transaksi
+        </button>
       </form>
-    </section>
+    </div>
   `;
 
-  const form = document.getElementById("form-transaksi");
-  const radioJenis = form.querySelectorAll('input[name="jenis"]');
-  const selectKat = document.getElementById("kategori");
-  const inpTgl = document.getElementById("tgl");
-  const inpJum = document.getElementById("jumlah");
-  const inpKet = document.getElementById("ket");
-  const fieldKet = form.querySelector(".field-keterangan");
-  const labelWajib = form.querySelector(".wajib-keluar");
+  const wadahKategori = container.querySelector("#wadah-kategori-dinamis");
+  const labelKategori = container.querySelector("#label-kategori-dinamis");
+  const grupKeterangan = container.querySelector("#grup-keterangan");
 
-  inpTgl.value = new Date().toISOString().split("T")[0];
+  function updateTampilanKategori() {
+    const daftar = dataKategori[jenisAktif] || [];
 
-  function isiKategori() {
-    const j = form.querySelector('input[name="jenis"]:checked').value;
-    selectKat.innerHTML = KATEGORI[j]
-      .map((k) => `<option value="${k.id}">${k.label}</option>`)
-      .join("");
-  }
+    if (!daftar.some((k) => k.id === kategoriAktif)) {
+      kategoriAktif = daftar[0]?.id || "";
+    }
 
-  function aturKeterangan() {
-    const j = form.querySelector('input[name="jenis"]:checked').value;
-    const kat = selectKat.value;
-
-    // SEMBUNYIKAN KOLOM JIKA UANG MASUK ATAU UANG MAKAN KARYAWAN
-    if (j === "masuk" || kat === "makan_karyawan") {
-      fieldKet.style.display = "none";
-      inpKet.removeAttribute("required");
-      if (labelWajib) labelWajib.style.display = "none";
+    if (jenisAktif === "masuk") {
+      labelKategori.innerHTML = "🟢 Kategori Pemasukan";
+      if (grupKeterangan) grupKeterangan.style.display = "none";
     } else {
-      fieldKet.style.display = "";
-      inpKet.setAttribute("required", "required");
-      if (labelWajib) labelWajib.style.display = "";
+      labelKategori.innerHTML = "🔴 Kategori Pengeluaran";
+      if (grupKeterangan) grupKeterangan.style.display = "block";
     }
+
+    wadahKategori.innerHTML = daftar
+      .map((item) => {
+        const isSelected = item.id === kategoriAktif;
+        return `
+          <div class="kartu-kategori-option ${isSelected ? "aktif" : ""}" data-id="${item.id}">
+            <div class="header-option">
+              <span class="ikon-option">${item.icon}</span>
+              <span class="judul-option">${item.label}</span>
+              <span class="radio-indicator"></span>
+            </div>
+            <p class="desk-option">${item.deskripsi}</p>
+          </div>
+        `;
+      })
+      .join("");
+
+    wadahKategori
+      .querySelectorAll(".kartu-kategori-option")
+      .forEach((card) => {
+        card.onclick = () => {
+          kategoriAktif = card.dataset.id;
+          updateTampilanKategori();
+        };
+      });
   }
 
-  isiKategori();
-  aturKeterangan();
-
-  // Listener agar perubahan jenis/kategori langsung memperbarui tampilan kolom keterangan
-  selectKat.addEventListener("change", aturKeterangan);
-  radioJenis.forEach((r) =>
-    r.addEventListener("change", () => {
-      isiKategori();
-      aturKeterangan();
-    }),
-  );
-
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const kat = selectKat.value;
-    let teksKeterangan = inpKet.value.trim();
-
-    // Otomatis buat keterangan default untuk Uang Makan Karyawan
-    if (kat === "makan_karyawan" && !teksKeterangan) {
-      teksKeterangan = "Uang Makan Karyawan";
-    }
-
-    const baru = {
-      id: Date.now(),
-      tanggal: inpTgl.value,
-      jenis: form.querySelector('input[name="jenis"]:checked').value,
-      kategori: kat,
-      jumlah: parseInt(inpJum.value),
-      keterangan: teksKeterangan,
+  container.querySelectorAll(".btn-jenis-tab").forEach((btn) => {
+    btn.onclick = () => {
+      container
+        .querySelectorAll(".btn-jenis-tab")
+        .forEach((b) => b.classList.remove("aktif"));
+      btn.classList.add("aktif");
+      jenisAktif = btn.dataset.jenis;
+      updateTampilanKategori();
     };
-
-    const semua = ambilSemuaTransaksi();
-    semua.unshift(baru);
-    simpanSemuaTransaksi(semua);
-
-    simpanTransaksiKeServer(baru);
-
-    if (typeof tampilkanNotifikasi === "function") {
-      tampilkanNotifikasi("berhasil", "✅ Transaksi berhasil disimpan!");
-    }
-    form.reset();
-    inpTgl.value = new Date().toISOString().split("T")[0];
-    isiKategori();
-    aturKeterangan();
-
-    if (typeof muatDashboardUtama === "function") {
-      muatDashboardUtama();
-    }
-  });
-};
-
-// ==================================================
-// 📊 DASHBOARD REKAP
-// ==================================================
-window.renderDashboardKeuangan = function () {
-  if (typeof muatDashboardUtama === "function") {
-    muatDashboardUtama();
-  }
-};
-
-// ==================================================
-// 📊 LAPORAN BULANAN
-// ==================================================
-window.renderLaporan = function (target, bulanDipilih = null) {
-  if (!target) return;
-
-  if (typeof muatDashboardUtama === "function") {
-    muatDashboardUtama();
-  }
-
-  const dataLaporan = JSON.parse(localStorage.getItem("laporanHarian") || "[]");
-
-  const daftarBulan = [
-    ...new Set(dataLaporan.map((item) => (item.tanggal || "").slice(0, 7))),
-  ].filter(Boolean);
-
-  if (!bulanDipilih) {
-    bulanDipilih =
-      daftarBulan.length > 0
-        ? daftarBulan[daftarBulan.length - 1]
-        : new Date().toISOString().slice(0, 7);
-  }
-
-  const dataBulanIni = dataLaporan.filter((item) =>
-    (item.tanggal || "").startsWith(bulanDipilih),
-  );
-
-  const [tahun, bulanNum] = bulanDipilih.split("-");
-  const namaBulanMap = {
-    "01": "Januari",
-    "02": "Februari",
-    "03": "Maret",
-    "04": "April",
-    "05": "Mei",
-    "06": "Juni",
-    "07": "Juli",
-    "08": "Agustus",
-    "09": "September",
-    10: "Oktober",
-    11: "November",
-    12: "Desember",
-  };
-  const teksBulanTahun = `${namaBulanMap[bulanNum] || "Bulan"} ${tahun}`;
-
-  let totalPendapatan = 0;
-  let totalPengeluaran = 0;
-  let totalLabaBersih = 0;
-
-  dataBulanIni.forEach((item) => {
-    totalPendapatan += Number(item.omset || 0);
-    const pengeluaranHariIni =
-      Number(item.belanjaPasar || 0) +
-      Number(item.opsRiil || 0) +
-      Number(item.qrisKeluar || 0) +
-      Number(item.tabunganWajib || 0) +
-      Number(item.kasbon || 0) +
-      Number(item.ditalangiOwner || 0);
-    totalPengeluaran += pengeluaranHariIni;
-    totalLabaBersih += Number(item.labaBersih || 0);
   });
 
-  const gajiPokokManajer = 750000;
-  const bagiHasilManajer =
-    totalLabaBersih > 0 ? Math.round(totalLabaBersih * 0.25) : 0;
-  const totalHakManajer = gajiPokokManajer + bagiHasilManajer;
-  const hakPemilik = Math.max(0, totalLabaBersih - bagiHasilManajer);
-
-  target.innerHTML = `
-    <section class="kartu-form" style="margin-top:15px; border-radius:16px;">
-      
-      <div style="background:#f1f5f9; padding:8px 12px; border-radius:12px; margin-bottom:24px; display:flex; align-items:center; gap:8px; overflow-x:auto;">
-        <span style="font-size:13px; font-weight:700; color:#64748b; padding-right:6px; white-space:nowrap;">📅 Periode:</span>
-        <div style="display:flex; gap:8px;">
-          ${
-            daftarBulan.length === 0
-              ? '<span style="font-size:13px; color:#64748b;">Belum ada data periode.</span>'
-              : daftarBulan
-                  .map((b) => {
-                    const [t, m] = b.split("-");
-                    const isAktif = b === bulanDipilih;
-                    return `
-                <button 
-                  type="button" 
-                  class="btn-pilih-bulan" 
-                  data-bulan="${b}"
-                  style="
-                    padding: 8px 16px;
-                    border-radius: 20px;
-                    border: none;
-                    font-size: 13px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    white-space: nowrap;
-                    transition: all 0.2s ease;
-                    ${
-                      isAktif
-                        ? "background: #1e40af; color: #ffffff; box-shadow: 0 4px 10px rgba(30,64,175,0.25);"
-                        : "background: #ffffff; color: #475569; border: 1px solid #cbd5e1;"
-                    }
-                  "
-                >
-                  ${namaBulanMap[m] || m} ${t}
-                </button>
-              `;
-                  })
-                  .join("")
-          }
-        </div>
-      </div>
-
-      <div class="judul-form">
-        <h3>📊 Laporan Bulanan Resmi — ${teksBulanTahun}</h3>
-        <p>Perhitungan otomatis arus kas, hak Manajer, dan sisa hak Pemilik.</p>
-      </div>
-
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:20px 0;">
-        <div class="kartu-ringkasan kartu-masuk">
-          <div class="label-ringkasan">🟢 Total Pendapatan</div>
-          <div class="nilai-ringkasan">${formatRupiah(totalPendapatan)}</div>
-        </div>
-        <div class="kartu-ringkasan kartu-keluar">
-          <div class="label-ringkasan">🔴 Total Pengeluaran</div>
-          <div class="nilai-ringkasan">${formatRupiah(totalPengeluaran)}</div>
-        </div>
-        <div class="kartu-ringkasan ${totalLabaBersih >= 0 ? "kartu-saldo-plus" : "kartu-saldo-minus"}">
-          <div class="label-ringkasan">💰 Laba Bersih Bulan Ini</div>
-          <div class="nilai-ringkasan">${formatRupiah(totalLabaBersih)}</div>
-        </div>
-      </div>
-
-      <div style="background:#fff8e6;border:1px solid #ffd699;border-radius:12px;padding:16px;margin:20px 0;">
-        <h4 style="margin:0 0 12px 0;color:#92400e;">💼 PERHITUNGAN HAK MANAJER (ESA)</h4>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #ffd699;">
-          <span>Gaji Pokok Tetap</span><span>Rp 750.000</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #ffd699;">
-          <span>25% Bagi Hasil dari Laba Bersih</span><span>${formatRupiah(bagiHasilManajer)}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:10px 0 0 0;font-weight:700;font-size:1.05rem;color:#92400e;">
-          <span>TOTAL HAK MANAJER</span><span>${formatRupiah(totalHakManajer)}</span>
-        </div>
-      </div>
-
-      <div style="background:#eff6ff;border:1px solid rgba(30,58,138,.2);border-radius:12px;padding:16px;">
-        <h4 style="margin:0 0 12px 0;color:#1e3a8a;">👑 SISA HAK PEMILIK (BU DEWI)</h4>
-        <div style="font-size:1.1rem;font-weight:700;text-align:center;color:#1e3a8a;">
-          ${formatRupiah(hakPemilik)}
-        </div>
-        <p style="margin:8px 0 0 0;font-size:0.9rem;opacity:0.8;">Laba bersih dikurangi 25% bagi hasil Manajer.</p>
-      </div>
-    </section>
-  `;
-
-  target.querySelectorAll(".btn-pilih-bulan").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      renderLaporan(target, btn.dataset.bulan);
+  // Inisialisasi Flatpickr Datepicker Modern
+  const elTanggal = container.querySelector("#input-tanggal");
+  let fpTanggal = null;
+  if (elTanggal && typeof flatpickr === "function") {
+    fpTanggal = flatpickr(elTanggal, {
+      locale: flatpickr.l10ns && flatpickr.l10ns.id ? "id" : "default",
+      dateFormat: "Y-m-d",
+      altInput: true,
+      altFormat: "j F Y",
+      defaultDate: hariIni,
+      disableMobile: true,
     });
-  });
+  }
+
+  updateTampilanKategori();
+
+  const form = container.querySelector("#form-input-transaksi");
+  if (form) {
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const btnSimpan = container.querySelector("#btn-simpan-transaksi");
+      btnSimpan.disabled = true;
+      btnSimpan.innerText = "⏳ Menyimpan...";
+
+      const elKet = container.querySelector("#input-keterangan");
+      const teksKet = elKet ? elKet.value.trim() : "";
+
+      const dataBaru = {
+        tanggal: container.querySelector("#input-tanggal").value,
+        jenis: jenisAktif,
+        kategori: kategoriAktif,
+        jumlah: Number(container.querySelector("#input-jumlah").value),
+        keterangan: jenisAktif === "masuk" ? "-" : teksKet || "-",
+        dibuatOleh: localStorage.getItem("roleAktif") || "sistem",
+      };
+
+      try {
+        if (typeof window.simpanTransaksiKeFirebase === "function") {
+          await window.simpanTransaksiKeFirebase(dataBaru);
+
+          if (typeof window.tampilkanNotifikasi === "function") {
+            window.tampilkanNotifikasi(
+              "berhasil",
+              "Transaksi berhasil disimpan ke Firebase!",
+            );
+          }
+
+          form.reset();
+          if (fpTanggal) {
+            fpTanggal.setDate(hariIni);
+          } else {
+            container.querySelector("#input-tanggal").value = hariIni;
+          }
+          jenisAktif = "masuk";
+          kategoriAktif = "tunai";
+          container.querySelectorAll(".btn-jenis-tab").forEach((b) => {
+            b.classList.toggle("aktif", b.dataset.jenis === "masuk");
+          });
+          updateTampilanKategori();
+        } else {
+          throw new Error("Fungsi penyimpan Firebase tidak ditemukan.");
+        }
+      } catch (err) {
+        if (typeof window.tampilkanNotifikasi === "function") {
+          window.tampilkanNotifikasi(
+            "error",
+            "Gagal menyimpan: " + err.message,
+          );
+        } else {
+          alert("Gagal menyimpan: " + err.message);
+        }
+      } finally {
+        btnSimpan.disabled = false;
+        btnSimpan.innerText = "💾 Simpan Transaksi";
+      }
+    });
+  }
 };
 
 // ==================================================
-// 🏦 RINCIAN POS TABUNGAN
+// 🏦 RINCIAN POS TABUNGAN WAJIB
 // ==================================================
-window.renderTabungan = function (target) {
-  if (!target) return;
+window.renderTabungan = function (container) {
+  if (!container) return;
 
-  if (typeof muatDashboardUtama === "function") {
-    muatDashboardUtama();
-  }
+  const dataRiwayat = window.dataRiwayatGlobal || [];
+  const tanggalUnik = [
+    ...new Set(dataRiwayat.map((t) => t.tanggal).filter(Boolean)),
+  ];
+  const jumlahHari = tanggalUnik.length;
 
-  const dataLaporan = JSON.parse(localStorage.getItem("laporanHarian") || "[]");
-  const jumlahHari = dataLaporan.length;
-
-  const totalTabungan = 495000 * jumlahHari;
+  const alokasiHarian = 495000;
+  const totalTabungan = alokasiHarian * jumlahHari;
 
   const posGaji = 325000 * jumlahHari;
   const posSewa = 80000 * jumlahHari;
@@ -372,94 +312,294 @@ window.renderTabungan = function (target) {
   const posJumatBerkah = 10000 * jumlahHari;
   const posSystemKasir = 5000 * jumlahHari;
 
-  target.innerHTML = `
-    <section class="kartu-form" style="margin-top:15px;">
+  const formatRupiah = (num) =>
+    "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+
+  container.innerHTML = `
+    <section class="kartu-form" style="margin-top:20px;">
       <div class="judul-form">
-        <h3>🏦 Rincian Pengelolaan Pos Tabungan Wajib</h3>
-        <p>Otomatis terakumulasi dari Alokasi Harian Rp 495.000 x ${jumlahHari} Hari Kerja.</p>
-        <div style="margin-top:10px;padding:12px 16px;background:#eff6ff;border:1px solid rgba(30,58,138,.15);border-radius:10px;font-weight:700;color:#1e3a8a;font-size:18px;">
-          💰 TOTAL TABUNGAN TERKUMPUL: ${formatRupiah(totalTabungan)}
+        <h3 style="display: flex; align-items: center; gap: 8px; font-size: 18px; color: #1e293b;">
+          🏦 Rincian Pengelolaan Pos Tabungan Wajib
+        </h3>
+        <p style="color: #64748b; font-size: 14px; margin-top: 4px;">
+          Otomatis terakumulasi dari Alokasi Harian Rp 495.000 × <strong>${jumlahHari} Hari Kerja</strong>.
+        </p>
+        <div style="margin-top:16px; padding:16px 20px; background:#eff6ff; border:1px solid rgba(30,58,138,0.15); border-radius:12px; font-weight:700; color:#1e3a8a; font-size:18px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>💰 TOTAL TABUNGAN TERKUMPUL</span>
+          <span style="font-size:22px; color:#2563eb;">${formatRupiah(totalTabungan)}</span>
         </div>
       </div>
-      <div class="grid-tabungan" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-top:16px;">
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #1e3a8a;">
-          <div style="font-size:12px; color:#64748b;">👷 Gaji Karyawan (Rp 325k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posGaji)}</div>
+
+      <div class="grid-tabungan" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-top:24px;">
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #1e3a8a; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">👷 Gaji Karyawan (Rp 325.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posGaji)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #0f766e;">
-          <div style="font-size:12px; color:#64748b;">🏠 Sewa Gedung & Pajak (Rp 80k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posSewa)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #0f766e; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">🏠 Sewa Gedung & Pajak (Rp 80.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posSewa)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #b45309;">
-          <div style="font-size:12px; color:#64748b;">💡 Listrik (Rp 35k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posListrik)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #b45309; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">💡 Listrik (Rp 35.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posListrik)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #7c3aed;">
-          <div style="font-size:12px; color:#64748b;">🎁 THR Karyawan (Rp 25k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posTHR)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #7c3aed; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">🎁 THR Karyawan (Rp 25.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posTHR)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #0284c7;">
-          <div style="font-size:12px; color:#64748b;">🛠️ Perawatan & Perbaikan (Rp 10k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posPerawatan)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #0284c7; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">🛠️ Perawatan & Perbaikan (Rp 10.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posPerawatan)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #16a34a;">
-          <div style="font-size:12px; color:#64748b;">📶 Internet / WiFi (Rp 5k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posWifi)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #16a34a; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">📶 Internet / WiFi (Rp 5.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posWifi)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #ea580c;">
-          <div style="font-size:12px; color:#64748b;">🕌 Jum'at Berkah / Sosial (Rp 10k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posJumatBerkah)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #ea580c; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">🕌 Jum'at Berkah / Sosial (Rp 10.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posJumatBerkah)}</div>
         </div>
-        <div style="background:#fff; border:1px solid #e2e8f0; padding:14px; border-radius:10px; border-left:4px solid #db2777;">
-          <div style="font-size:12px; color:#64748b;">💻 Maintenance Kasir (Rp 5k/hr)</div>
-          <div style="font-size:18px; font-weight:bold; color:#0f172a; margin-top:4px;">${formatRupiah(posSystemKasir)}</div>
+        <div style="background:#ffffff; border:1px solid #e2e8f0; padding:16px; border-radius:12px; border-left:5px solid #db2777; box-shadow:0 2px 8px rgba(0,0,0,0.03);">
+          <div style="font-size:13px; color:#64748b; font-weight:600;">💻 Maintenance Kasir (Rp 5.000/hr)</div>
+          <div style="font-size:20px; font-weight:800; color:#0f172a; margin-top:6px;">${formatRupiah(posSystemKasir)}</div>
         </div>
       </div>
     </section>
   `;
 };
 
-//// ==================================================
-// 🗑️ HAPUS TRANSAKSI (DENGAN SWEETALERT2 MODERN)
 // ==================================================
-window.hapusTransaksi = function (idTransaksi) {
-  Swal.fire({
-    title: "Hapus Transaksi Ini?",
-    text: "Data yang dihapus tidak dapat dikembalikan!",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#ef4444",
-    cancelButtonColor: "#64748b",
-    confirmButtonText: "Ya, Hapus!",
-    cancelButtonText: "Batal",
-    reverseButtons: true,
-    customClass: {
-      popup: "rounded-2xl shadow-xl",
-      confirmButton: "px-5 py-2.5 rounded-xl font-medium text-white",
-      cancelButton: "px-5 py-2.5 rounded-xl font-medium text-white",
-    },
-  }).then((result) => {
-    if (result.isConfirmed) {
-      let semuaData = ambilSemuaTransaksi();
-      let dataBaru = semuaData.filter(
-        (transaksi) => transaksi.id !== idTransaksi,
-      );
-      simpanSemuaTransaksi(dataBaru);
+// 📊 REKAP LAPORAN BULANAN
+// ==================================================
+window.renderLaporan = function (container, bulanPilihan) {
+  if (!container) return;
 
-      Swal.fire({
-        title: "Terhapus!",
-        text: "Data transaksi berhasil dihapus.",
-        icon: "success",
-        timer: 1500,
-        showConfirmButton: false,
-        customClass: {
-          popup: "rounded-2xl shadow-xl",
-        },
-      });
+  const dataRiwayat = window.dataRiwayatGlobal || [];
 
-      if (typeof renderDashboardKeuangan === "function") {
-        renderDashboardKeuangan();
-      }
+  if (!bulanPilihan) {
+    const skr = new Date();
+    const thn = skr.getFullYear();
+    const bln = String(skr.getMonth() + 1).padStart(2, "0");
+    bulanPilihan = `${thn}-${bln}`;
+  }
+
+  const dataBulanIni = dataRiwayat.filter(
+    (t) => t.tanggal && t.tanggal.startsWith(bulanPilihan),
+  );
+
+  const rekapPerTanggal = {};
+  dataBulanIni.forEach((t) => {
+    const tgl = t.tanggal;
+    if (!rekapPerTanggal[tgl]) {
+      rekapPerTanggal[tgl] = {
+        tanggal: tgl,
+        tunai: 0,
+        qrisMasuk: 0,
+        transfer: 0,
+        tabunganWajib: 495000,
+        kasbon: 0,
+        belanjaPasar: 0,
+        opsRiil: 0,
+        qrisKeluar: 0,
+        ditalangiOwner: 0,
+        keterangan: [],
+      };
+    }
+
+    const item = rekapPerTanggal[tgl];
+    const nominal = Number(String(t.jumlah).replace(/[^0-9]/g, "")) || 0;
+
+    switch (t.kategori) {
+      case "tunai":
+        item.tunai += nominal;
+        break;
+      case "qris_masuk":
+        item.qrisMasuk += nominal;
+        break;
+      case "transfer":
+        item.transfer += nominal;
+        break;
+      case "belanja_pasar":
+        item.belanjaPasar += nominal;
+        break;
+      case "ops_riil":
+        item.opsRiil += nominal;
+        break;
+      case "makan_karyawan":
+        item.opsRiil += nominal;
+        break;
+      case "qris_keluar":
+        item.qrisKeluar += nominal;
+        break;
+      case "kasbon":
+        item.kasbon += nominal;
+        break;
+      case "talangan_owner":
+        item.ditalangiOwner += nominal;
+        break;
     }
   });
+
+  const dataLaporanBulan = Object.values(rekapPerTanggal).map((row) => {
+    const omset = row.tunai + row.qrisMasuk + row.transfer;
+    const totalPengeluaranOps =
+      row.belanjaPasar + row.opsRiil + row.qrisKeluar + row.ditalangiOwner;
+    const labaKotor = omset - totalPengeluaranOps;
+    const labaBersih = labaKotor - row.tabunganWajib - row.kasbon;
+    return { ...row, omset, labaKotor, labaBersih };
+  });
+
+  let totalOmset = 0;
+  let totalLabaKotor = 0;
+  let totalLabaBersih = 0;
+
+  dataLaporanBulan.forEach((item) => {
+    totalOmset += item.omset;
+    totalLabaKotor += item.labaKotor;
+    totalLabaBersih += item.labaBersih;
+  });
+
+  const gajiPokokManajer = 750000;
+  const bagiHasilManajer = Math.max(0, totalLabaBersih * 0.25);
+  const totalHakManajer = gajiPokokManajer + bagiHasilManajer;
+  const hakPemilik = totalLabaBersih - bagiHasilManajer;
+
+  const formatRupiah = (num) =>
+    "Rp " + (Number(num) || 0).toLocaleString("id-ID");
+
+  const namaBulanIndo = (yyyyMm) => {
+    const [y, m] = yyyyMm.split("-");
+    const namaBln = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
+    return `${namaBln[parseInt(m, 10) - 1] || m} ${y}`;
+  };
+
+  container.innerHTML = `
+    <section class="kartu-form" style="margin-top:20px;">
+      <div class="judul-form" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:20px;">
+        <div>
+          <h3 style="font-size:18px; color:#1e293b; margin:0;">📊 Rekap Laporan Bulanan</h3>
+          <p style="color:#64748b; font-size:13.5px; margin:4px 0 0 0;">
+            Periode: <strong>${namaBulanIndo(bulanPilihan)}</strong>
+          </p>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <input type="month" id="filter-bulan-laporan" value="${bulanPilihan}" style="padding:8px 12px; border:1px solid #cbd5e1; border-radius:8px; font-size:14px; outline:none; background:#fff;">
+          <button type="button" id="btn-cetak-laporan" style="background:#0f766e; color:#fff; border:none; padding:9px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:13.5px; display:flex; align-items:center; gap:6px;">
+            🖨️ Cetak Laporan
+          </button>
+        </div>
+      </div>
+
+      <!-- RINGKASAN REKAP BULANAN -->
+      <div class="grid-ringkasan-lengkap" style="margin-top:0; margin-bottom:24px;">
+        <div class="kartu-ringkasan kartu-omset">
+          <div class="label-ringkasan">💰 Total Omset</div>
+          <div class="nilai-ringkasan">${formatRupiah(totalOmset)}</div>
+        </div>
+        <div class="kartu-ringkasan kartu-labakotor">
+          <div class="label-ringkasan">📈 Total Laba Kotor</div>
+          <div class="nilai-ringkasan">${formatRupiah(totalLabaKotor)}</div>
+        </div>
+        <div class="kartu-ringkasan kartu-lababersih">
+          <div class="label-ringkasan">💵 Total Laba Bersih</div>
+          <div class="nilai-ringkasan">${formatRupiah(totalLabaBersih)}</div>
+        </div>
+      </div>
+
+      <!-- PERHITUNGAN HAK MANAJER & OWNER -->
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-bottom:24px;">
+        <div style="background:#fff8e6; border:1px solid #ffd699; border-radius:14px; padding:20px;">
+          <h4 style="margin:0 0 14px 0; color:#92400e; font-size:16px;">💼 PERHITUNGAN HAK MANAJER (ESA)</h4>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ffd699; font-size:14px;">
+            <span>Gaji Pokok Tetap</span>
+            <span style="font-weight:600;">Rp 750.000</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px dashed #ffd699; font-size:14px;">
+            <span>25% Bagi Hasil dari Laba Bersih</span>
+            <span style="font-weight:600;">${formatRupiah(bagiHasilManajer)}</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; padding:12px 0 0 0; font-weight:800; font-size:16px; color:#92400e;">
+            <span>TOTAL HAK MANAJER</span>
+            <span>${formatRupiah(totalHakManajer)}</span>
+          </div>
+        </div>
+
+        <div style="background:#eff6ff; border:1px solid rgba(30,58,138,0.2); border-radius:14px; padding:20px;">
+          <h4 style="margin:0 0 14px 0; color:#1e3a8a; font-size:16px;">👑 SISA HAK PEMILIK (BU DEWI)</h4>
+          <div style="font-size:24px; font-weight:800; color:#1e3a8a; margin:16px 0 8px 0;">
+            ${formatRupiah(hakPemilik)}
+          </div>
+          <p style="margin:0; font-size:13px; color:#475569;">
+            Laba bersih dikurangi 25% bagi hasil Manajer.
+          </p>
+        </div>
+      </div>
+
+      <!-- TABEL REKAP HARIAN BULAN INI -->
+      <h4 style="color:#1e293b; margin-bottom:12px; font-size:16px;">📜 Detail Rekap Per Hari Bulan Ini</h4>
+      <div class="tabel-responsif">
+        <table class="tabel-transaksi-lengkap">
+          <thead>
+            <tr>
+              <th>Tanggal</th>
+              <th>Omset</th>
+              <th>Pengeluaran Ops</th>
+              <th>Tabungan Wajib</th>
+              <th>Kasbon</th>
+              <th>Laba Kotor</th>
+              <th>Laba Bersih</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${
+              dataLaporanBulan.length === 0
+                ? `<tr><td colspan="7" class="tabel-kosong" style="text-align:center; padding:20px; color:#94a3b8;">Belum ada data transaksi untuk bulan ini.</td></tr>`
+                : dataLaporanBulan
+                    .map(
+                      (r) => `
+              <tr>
+                <td style="text-align:left; font-weight:600;">${r.tanggal}</td>
+                <td>${formatRupiah(r.omset)}</td>
+                <td>${formatRupiah(r.belanjaPasar + r.opsRiil + r.qrisKeluar + r.ditalangiOwner)}</td>
+                <td>${formatRupiah(r.tabunganWajib)}</td>
+                <td>${formatRupiah(r.kasbon)}</td>
+                <td style="font-weight:700; color:#d97706;">${formatRupiah(r.labaKotor)}</td>
+                <td style="font-weight:700; color:#2563eb;">${formatRupiah(r.labaBersih)}</td>
+              </tr>
+            `,
+                    )
+                    .join("")
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+
+  const elFilterBulan = container.querySelector("#filter-bulan-laporan");
+  if (elFilterBulan) {
+    elFilterBulan.addEventListener("change", (e) => {
+      window.renderLaporan(container, e.target.value);
+    });
+  }
+
+  const btnCetak = container.querySelector("#btn-cetak-laporan");
+  if (btnCetak) {
+    btnCetak.addEventListener("click", () => {
+      window.print();
+    });
+  }
 };
